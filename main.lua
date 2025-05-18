@@ -1,6 +1,6 @@
 --[[ recreacion de seaquest ]]
-local wf = require "libs/windfield"
-    local anim8 = require('lib/anim8')
+    local wf = require("lib/windfield")
+    local anim8 = require('lib/anim8/anim8')
 function love.load()
     love.window.setTitle("Seaquest: Definitive Edition")
     world = wf.newWorld(0, 0, true)
@@ -14,6 +14,13 @@ function love.load()
     world:addCollisionClass('Player')
     world:addCollisionClass('Enemy')
 
+    player = {
+        x = 200,
+        y = 200,
+        speed = 200
+    }
+    player.collider = world:newCircleCollider(player.x, player.y, 20)
+    player.collider:setFixedRotation(true)
 
     patrones = {
         {lado = "izquierda", cantidad = 4, espacio = 60},
@@ -33,7 +40,6 @@ function SpawnTiburonesPatron(patron)
     local espacioInferior = 100
 
     local alturaArea = altoVentana - espacioSuperior - espacioInferior
-
 
     local totalAltura = (patron.cantidad - 1) * patron.espacio
 
@@ -56,6 +62,7 @@ function SpawnTiburonesPatron(patron)
         enemigo.body:setType('kinematic')
         table.insert(tiburones, enemigo)
     end
+
 end
 
 function love.update(dt)
@@ -85,10 +92,37 @@ function love.update(dt)
             table.remove(tiburones, i)
         end
     end
+
+    --[[ jugador ]]
+    vx = 0
+    vy = 0
+    if love.keyboard.isDown("right") then
+        vx = player.speed --[[ * dt ]]
+        isMoving = true
+    end
+    if love.keyboard.isDown("left") then
+        vx = player.speed * -1 --[[ * dt ]]
+        isMoving = true
+    end
+    if love.keyboard.isDown("up") then
+        vy = player.speed * -1 --[[ * dt ]]
+        isMoving = true
+    end
+    if love.keyboard.isDown("down") then
+        vy = player.speed --[[ * dt ]]
+        isMoving = true
+    end
+
+    player.collider:setLinearVelocity(vx, vy)
+    player.x = player.collider:getX()
+    player.y = player.collider:getY()
 end
 
 function love.draw()
     world:draw()
+
+    --[[ jugador ]]
+    love.graphics.circle("fill", player.x, player.y, 20)
 
     local altoVentana = love.graphics.getHeight()
     local ySuperior = 100
