@@ -42,6 +42,18 @@ function love.load()
     player.collider = world:newCircleCollider(player.x, player.y, 20)
     player.collider:setFixedRotation(true)
 
+    -- Creación de los bordes de la pantalla
+    wall_top = world:newRectangleCollider(0, 0, love.graphics.getWidth(), 1)
+    wall_bottom = world:newRectangleCollider(0, love.graphics.getHeight()-1, love.graphics.getWidth(), 1)
+    wall_left = world:newRectangleCollider(0, 0, 1, love.graphics.getHeight())
+    wall_right = world:newRectangleCollider(love.graphics.getWidth()-1, 0, 1, love.graphics.getHeight())
+
+    -- Hacer que los bordes sean estáticos (no se muevan)
+    wall_top:setType("static")
+    wall_bottom:setType("static")
+    wall_left:setType("static")
+    wall_right:setType("static")
+
     --[[ 
     variables para patrones de aparicion de enemgios:
     - lado: de donde va a salir
