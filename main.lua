@@ -1,34 +1,37 @@
 --[[ recreacion de seaquest ]]
+
 local wf = require("lib/windfield")
 local anim8 = require('lib/anim8/anim8')
 
 function love.load()
+    --[[ configuraciones basicas de la ventana y uso de fisicas ]]
     love.window.setTitle("Seaquest: Definitive Edition")
     world = wf.newWorld(0, 0, true)
     world:setQueryDebugDrawing(true)
 
+    --[[ creacion de arreglos para enemigos, jugador y puntuacion ]]
     tiburones = {}
     disparos = {}
     disparosJugador = {}
     puntuacion = 0
 
+    --[[ variables de tiempo ]]
     tiempoEnemigo = 0
     tiempoEntrePatrones = 8 
     tiempoDesdeUltimoPatron = 0
 
     disparoCooldown = 1
     tiempoDesdeUltimoDisparo = disparoCooldown
-    
+   
+    --[[ instancia de clases para hutbox de enemigos ]]
+    world:addCollisionClass('Enemy')
+    world:addCollisionClass('DisparoJugador')
+    world:addCollisionClass('DisparoEnemy')
+    --[[ validacion: que las balas del enemigo no choquen con las del jugador y viceversa ]]
+    world:collisionClassesSet('DisparoJugador', {ignores = {'DisparoJugador', 'DisparoEnemy'}})
+    world:collisionClassesSet('DisparoEnemy', {ignores = {'DisparoEnemy', 'DisparoJugador'}})
 
-
-world:addCollisionClass('Enemy')
-world:addCollisionClass('DisparoJugador')
-world:addCollisionClass('DisparoEnemy')
-
-world:collisionClassesSet('DisparoJugador', {ignores = {'DisparoJugador', 'DisparoEnemy'}})
-world:collisionClassesSet('DisparoEnemy', {ignores = {'DisparoEnemy', 'DisparoJugador'}})
-
-
+    --[[ inicializacion de variables del jugador ]]
     player = {
         x = 200,
         y = 200,
@@ -39,6 +42,13 @@ world:collisionClassesSet('DisparoEnemy', {ignores = {'DisparoEnemy', 'DisparoJu
     player.collider = world:newCircleCollider(player.x, player.y, 20)
     player.collider:setFixedRotation(true)
 
+    --[[ 
+    variables para patrones de aparicion de enemgios:
+    - lado: de donde va a salir
+    - cantidad: cuantos van a salir en la oleada
+    - espacio: separacion vertical entre ellos
+    - tipo: que enemigo es el que va salir, para poder asignar caracteristicas segun cual sea
+    ]]
     patrones = {
         {lado = "izquierda", cantidad = 4, espacio = 60, tipo = "submarino"},
         {lado = "derecha", cantidad = 5, espacio = 80, tipo = "tiburon"},
@@ -50,18 +60,26 @@ world:collisionClassesSet('DisparoEnemy', {ignores = {'DisparoEnemy', 'DisparoJu
     indicePatronActual = 1
 end
 
+--[[ manejo de aparicion de enemigos ]]
 function SpawnTiburonesPatron(patron)
+    --[[ 
+    variables para obtener las dimenciones de la ventana
+        su funcion aqui es delimitar hasta donde pueden aparecer los enemigos en lo alto y ancho de la misma
+    ]]
     local anchoVentana = love.graphics.getWidth()
     local altoVentana = love.graphics.getHeight()
     local espacioSuperior = 100
     local espacioInferior = 100
     local alturaArea = altoVentana - espacioSuperior - espacioInferior
     local totalAltura = (patron.cantidad - 1) * patron.espacio
+    --[[ yInicio es de donde epieza el spawn en el eje y ]]
     local yInicio = espacioSuperior + (alturaArea - totalAltura) / 2
 
+    --[[ inicializacion de la aparicion de enemigos ]]
     for i = 0, patron.cantidad - 1 do
         local y = yInicio + i * patron.espacio
         local enemigo = {}
+        --[[ control de direccion de los colliders de los enemigos ]]
         if patron.lado == "izquierda" then
             enemigo.body = world:newRectangleCollider(-40, y, 40, 20)
             enemigo.speed = 100
@@ -70,11 +88,19 @@ function SpawnTiburonesPatron(patron)
             enemigo.speed = -100
         end
 
+        --[[
+        envio de direccion y tipo de enemigo de acuerdo al patron
+        instancia de la colicion para los enemigos
+        ]]
         enemigo.lado = patron.lado
         enemigo.tipo = patron.tipo
         enemigo.body:setCollisionClass('Enemy')
         enemigo.body:setType('kinematic')
 
+        --[[ 
+        si el enemigo es un submarino, este debe disparar
+        aqui se inicializan las variables del tiempo para disparos
+        ]]
         if enemigo.tipo == "submarino" then
             enemigo.tiempoDesdeUltimoDisparo = 0
             enemigo.tiempoEntreDisparos = 2 
@@ -84,6 +110,7 @@ function SpawnTiburonesPatron(patron)
     end
 end
 
+--[[ creacion de hitbox de disparo ]]
 function SpawnDisparo(x, y, direccion, clase)
     local disparo = {}
     disparo.body = world:newRectangleCollider(x, y, 6, 3)
@@ -101,17 +128,16 @@ end
 function love.update(dt)
     world:update(dt)
 
-
+    --[[ variables para manejar el disparo del jugador ]]
     tiempoDesdeUltimoDisparo = tiempoDesdeUltimoDisparo + dt
     tiempoDesdeUltimoPatron = tiempoDesdeUltimoPatron + dt
 
-
+    --[[ instancia del disparo del jugador ]]
     if love.keyboard.isDown("space") and tiempoDesdeUltimoDisparo >= disparoCooldown then
-    local offsetX = player.direccionDisparo * 20
-    SpawnDisparo(player.x + offsetX, player.y, player.direccionDisparo, 'DisparoJugador')
-    tiempoDesdeUltimoDisparo = 0
-end
-
+        local offsetX = player.direccionDisparo * 20
+        SpawnDisparo(player.x + offsetX, player.y, player.direccionDisparo, 'DisparoJugador')
+        tiempoDesdeUltimoDisparo = 0
+    end
 
     if tiempoDesdeUltimoPatron >= tiempoEntrePatrones then
         local patron = patrones[indicePatronActual]
@@ -141,6 +167,7 @@ end
         end
     end
 
+
     for i = #disparos, 1, -1 do
         local d = disparos[i]
         local x, y = d.body:getPosition()
@@ -152,6 +179,7 @@ end
         local collider=world:queryRectangleArea(x-5, y-2, 10, 5, {'Enemy'})
     end
 
+    --[[ manejo de como los disparos del jugador pueden eliminar enemigos ]]
     for i = #disparosJugador, 1, -1 do
         local d = disparosJugador[i]
         local x, y = d.body:getPosition()
@@ -177,7 +205,7 @@ end
         end
     end
 
-
+    --[[ movimiento del jugador ]]
     local vx, vy = 0, 0
     if love.keyboard.isDown("right") then vx = player.speed player.direccionDisparo = 1 end
     if love.keyboard.isDown("left") then vx = -player.speed  player.direccionDisparo = -1 end
@@ -188,18 +216,18 @@ end
     player.x = player.collider:getX()
     player.y = player.collider:getY()
 
+    --[[ creacion de colision en las balas del enemigo ]]
     if player.vivo then
+        local colisionEnemigos = world:queryCircleArea(player.x, player.y, 20, {'Enemy'})
+        if #colisionEnemigos > 0 then
+            love.event.quit()
+        end
 
-    local colisionEnemigos = world:queryCircleArea(player.x, player.y, 20, {'Enemy'})
-    if #colisionEnemigos > 0 then
-        love.event.quit()
+        local colisionBalas = world:queryCircleArea(player.x, player.y, 20, {'DisparoEnemy'})
+        if #colisionBalas > 0 then
+            love.event.quit()
+        end
     end
-
-    local colisionBalas = world:queryCircleArea(player.x, player.y, 20, {'DisparoEnemy'})
-    if #colisionBalas > 0 then
-        love.event.quit()
-    end
-end
 end
 
 
@@ -207,14 +235,17 @@ end
 function love.draw()
     world:draw()
 
+    --[[ dibujo del jugador ]]
     love.graphics.setColor(1, 1, 1)
     love.graphics.circle("fill", player.x, player.y, 20)
 
+    --[[ dibujo de seguidilla de circulos que se crean detras del jugador para generar movimiento ]]
     love.graphics.setColor(0, 0, 1)
     love.graphics.setLineWidth(2)
     love.graphics.line(0, 100, love.graphics.getWidth(), 100)
     love.graphics.line(0, love.graphics.getHeight() - 100, love.graphics.getWidth(), love.graphics.getHeight() - 100)
 
+    --[[ dibujo de enemigos, ambos rectangulos pero se distinguen por color ]]
     for _, enemigo in ipairs(tiburones) do
         local x, y = enemigo.body:getPosition()
         if enemigo.tipo == "tiburon" then
@@ -225,6 +256,7 @@ function love.draw()
         love.graphics.rectangle('fill', x - 20, y - 10, 40, 20)
     end
 
+    --[[ dibujo de disparos ]]
     love.graphics.setColor(1, 1, 0)
     for _, d in ipairs(disparos) do
         local x, y = d.body:getPosition()
@@ -235,6 +267,7 @@ function love.draw()
         love.graphics.rectangle('fill', x - 3, y - 1.5, 6, 3)
     end
 
+    --[[ dibujo de marcador de puntos ]]
     love.graphics.setColor(1, 1, 1)
     love.graphics.printf("Puntos: " .. puntuacion, 0, 20, love.graphics.getWidth(), "center")
 end
