@@ -128,7 +128,7 @@ function spawnBuzos(x, y)
         speed = buzoSpeed,
         state = "normal",
         direction = -1,
-        collider = world:newRectangleCollider(x, y, diverSize, diverSize),
+        collider = world:newRectangleCollider(x, y, buzoSize, buzoSize),
         temporizador = 0
     }
     buzo.collider:setCollisionClass("buzo")
