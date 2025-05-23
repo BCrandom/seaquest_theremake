@@ -39,7 +39,7 @@ function love.load()
         speed = 200,
         direccionDisparo = 1,
         vivo = true,
-        vidas=3
+        vidas= 3
     }
     player.collider = world:newCircleCollider(player.x, player.y, 20)
     player.collider:setFixedRotation(true)
@@ -75,7 +75,17 @@ function love.load()
         {lado = "derecha", cantidad = 7, espacio = 50, tipo = "tiburon",orientacion = "vertical"},
     }
     indicePatronActual = 1
+
+    --[[ buzos: variales globales ]]
+    buzos = {}
+    tiempoBuzo = 0
+    buzoCooldown = 5
+    buzoSpeed = 30
+    maxBuzosSpawn = 4
+    buzoSize = 20
+
 end
+
 --[[funcion para resetear cuando el jugador pierde una vida]]
 function reset()
     -- [[Borrar enemigos]]
@@ -108,6 +118,31 @@ function reset()
     tiempoDesdeUltimoDisparo = disparoCooldown
 end
 
+--[[ manejo de aparicion de buzos ]]
+function spawnBuzos(x, y)
+    local buzo = {
+        x = x,
+        y = y,
+        w = buzoSize,
+        h = buzoSize,
+        speed = buzoSpeed,
+        state = "normal",
+        direction = -1,
+        collider = world:newRectangleCollider(x, y, diverSize, diverSize),
+        temporizador = 0
+    }
+    buzo.collider:setCollisionClass("buzo")
+    buzo.collider:setObject(buzo)
+    table.insert(buzos, buzo)
+end
+
+--[[ manejo de oleadas de buzos ]]
+function spawnBuzosOlas()
+    local filas = {60, 90, 120, 150}
+    for i = 1, maxBuzosSpawn do
+        spawnBuzos(420, rows[i])
+    end
+end
 
 --[[ manejo de aparicion de enemigos ]]
 function SpawnTiburonesPatron(patron)
@@ -218,8 +253,6 @@ function SpawnTiburonesPatron(patron)
         end
     end
 end
-
-
 
 --[[ creacion de hitbox de disparo ]]
 function SpawnDisparo(x, y, direccion, clase)
@@ -405,9 +438,10 @@ function love.update(dt)
 
         break -- [[mismo caso que con el enemigo]]
     end
+
+    --[[ buzos ]]
+    
 end
-
-
 
 function love.draw()
     world:draw()
@@ -448,4 +482,5 @@ function love.draw()
     love.graphics.setColor(1, 1, 1)
     love.graphics.printf("Puntos: " .. puntuacion, 0, 20, love.graphics.getWidth(), "center")
 end
-end
+end -- de donde es este fokin end????
+--[[ al quitarlo genera un error en el update, wtf ]]
