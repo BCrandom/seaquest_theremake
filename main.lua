@@ -9,8 +9,9 @@ function love.load()
     world = wf.newWorld(0, 0, true)
     world:setQueryDebugDrawing(true)
 
-    --[[ creacion de arreglos para enemigos, jugador,puntuacion y delay ]]
+    --[[ creacion de arreglos para enemigos, buzos, jugador,puntuacion y delay ]]
     tiburones = {}
+    buzos = {}
     disparos = {}
     disparosJugador = {}
     enemigosDelay = {}
@@ -26,6 +27,8 @@ function love.load()
    
     --[[ instancia de clases para hitbox de enemigos ]]
     world:addCollisionClass('Enemy')
+    -- clase buzo
+    world:addCollisionClass('buzo')
     world:addCollisionClass('DisparoJugador')
     world:addCollisionClass('DisparoEnemy')
     --[[ validacion: que las balas del enemigo no choquen con las del jugador y viceversa ]]
@@ -34,16 +37,21 @@ function love.load()
 
     --[[ inicializacion de variables del jugador ]]
     player = {
-        x = 200,
-        y = 200,
+        x = 400,
+        y = 100,
         speed = 200,
         direccionDisparo = 1,
         vivo = true,
-        vidas= 3,
-        oxigeno = 100
+        vidas= 3
     }
     player.collider = world:newCircleCollider(player.x, player.y, 20)
     player.collider:setFixedRotation(true)
+
+    buzoRecogido = nil
+    puedeRecogerBuzo = true
+    buzoRecogido = {}
+    contadorBuzos = 0
+    maxBuzos = 6
 
     -- Creación de los bordes de la pantalla
     wall_top = world:newRectangleCollider(0, 0, love.graphics.getWidth(), 1)
@@ -63,31 +71,21 @@ function love.load()
     - cantidad: cuantos van a salir en la oleada
     - espacio: separacion vertical entre ellos
     - tipo: que enemigo es el que va salir, para poder asignar caracteristicas segun cual sea
-    -delay: para que los enemigos salgan al mismo tiempo
+    - delay: para que los enemigos salgan al mismo tiempo
     orientacion: si aparecen en filas de manera horizontal,vertical o mixto
     enemigos: sub objeto para especificar que que tipos de enemgiso quiero en un patron
     movimientos:diferentes hechos patrones
     ]]
-      patrones = {
-        {lado = "ambos",delay=true,orientacion='vertical',movimiento="lineal",enemigos={{tipo = "submarino", cantidad = 2, espacio = 40},{tipo = "tiburon", cantidad = 3, espacio = 40}}},
+    patrones = {
+        {lado = "izquierda",delay=true,orientacion='vertical',enemigos={{tipo = "submarino", cantidad = 2, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
+        {lado = "derecha", cantidad = 5, espacio = 80, tipo = "tiburon",orientacion = "mixto"},
+        {lado = "derecha", cantidad = 3, espacio = 50, tipo = "submarino",delay=true,orientacion = "vertical"},
+        {lado = "izquierda", cantidad = 6, espacio = 50, tipo = "submarino",orientacion = "horizontal"},
+        {lado = "izquierda", cantidad = 4, espacio = 70, tipo = "tiburon",orientacion = "vertical"},
+        {lado = "derecha", cantidad = 7, espacio = 50, tipo = "tiburon",orientacion = "vertical"},
     }
     indicePatronActual = 1
-        desbloqueosRealizados = {} 
-    --[[
-    añadir patrones amedida que va aumentando de puntos
-    ]]
-    desbloqueosPorPuntuacion = {
-    
-    [50] = {
-        {lado = "izquierda", cantidad = 5, espacio = 40, tipo = "submarino", delay=true, orientacion = "horizontal", movimiento = "lineal"}
-    },
-    [100] = {
-        {lado = "derecha", cantidad = 6, espacio = 50, tipo = "tiburon", delay=true, orientacion = "vertical", movimiento = "zigzag"}
-    },
-    
-    }
-    --[[llevar el control de patrones desbloquados y evitar repetir desbloqueos]]
-    desbloqueosRealizados = {}
+
     --[[ buzos: variales globales ]]
     buzos = {}
     tiempoBuzo = 0
@@ -104,6 +102,12 @@ function reset()
     for i = #tiburones, 1, -1 do
         tiburones[i].body:destroy()
         table.remove(tiburones, i)
+    end
+
+    --[[ buzos ]]
+    for i = #buzos, 1, -1 do
+        buzos[i].body:destroy()
+        table.remove(buzos, i)
     end
 
     -- [[Borrar balas]]
@@ -128,16 +132,6 @@ function reset()
 
     disparoCooldown = 1
     tiempoDesdeUltimoDisparo = disparoCooldown
-    
-    --[[reinicio de patrones al morir]]
-    patrones = {
-    {lado = "ambos", delay = true, orientacion = 'vertical', movimiento = "lineal", enemigos = {
-        {tipo = "submarino", cantidad = 2, espacio = 40},
-        {tipo = "tiburon", cantidad = 3, espacio = 40}
-    }}
-}
-    indicePatronActual = 1
-    desbloqueosRealizados = {} -- reiniciar desbloqueos
 end
 
 --[[ manejo de aparicion de buzos ]]
@@ -282,6 +276,73 @@ function SpawnTiburonesPatron(patron)
             yActual = yActual + grupo.cantidad * grupo.espacio + 20
         end
     end
+end
+
+function SpawnBuzosPatron(patron)
+    local anchoVentana = love.graphics.getWidth()
+    local altoVentana = love.graphics.getHeight()
+    local xInicio = patron.lado == "izquierda" and -40 or anchoVentana + 40
+    local direccionX = patron.lado == "izquierda" and 1 or -1
+
+    local totalAltura = 0
+    if patron.orientacion == "vertical" and patron.enemigos then
+        for _, grupo in ipairs(patron.enemigos) do
+            totalAltura = totalAltura + grupo.cantidad * grupo.espacio + 20
+        end
+    elseif patron.orientacion == "vertical" then
+        totalAltura = patron.cantidad * patron.espacio
+    end
+
+    local yActual = (altoVentana / 2) - (totalAltura / 2)
+
+    for _, grupo in ipairs(patron.enemigos or {{tipo=patron.tipo, cantidad=patron.cantidad, espacio=patron.espacio}}) do
+        if grupo.tipo ~= "buzo" then goto continue end
+        local cantidad = grupo.cantidad
+        local espacio = grupo.espacio
+
+        if patron.orientacion == "mixto" then
+            local totalDesplazamiento = (cantidad - 1) * espacio
+            local xCentro = love.graphics.getWidth() / 2
+            local yCentro = love.graphics.getHeight() / 2
+            xInicio = xCentro - (totalDesplazamiento / 2) * direccionX
+            yActual = yCentro - (totalDesplazamiento / 2)
+        end
+
+        for i = 0, cantidad - 1 do
+            local x, y
+            if patron.orientacion == "horizontal" then
+                y = altoVentana / 2
+                x = xInicio + i * espacio * direccionX
+            elseif patron.orientacion == "vertical" then
+                x = xInicio
+                y = yActual + i * espacio
+            elseif patron.orientacion == "mixto" then
+                x = xInicio + i * espacio * direccionX
+                y = yActual + i * espacio
+            end
+
+            local buzo = {}
+            buzo.body = world:newRectangleCollider(x, y, 30, 20)
+            buzo.body:setType('kinematic')
+            buzo.body:setCollisionClass('buzo')
+            buzo.speed = direccionX * 60
+            buzo.lado = patron.lado
+            buzo.recogido = false
+            table.insert(buzos, buzo)
+        end
+
+        if patron.orientacion == "vertical" then
+            yActual = yActual + cantidad * espacio + 20
+        end
+        ::continue::
+    end
+end
+
+function anyBuzoInPatron(grupos)
+    for _, grupo in ipairs(grupos) do
+        if grupo.tipo == "buzo" then return true end
+    end
+    return false
 end
 
 --[[ creacion de hitbox de disparo ]]
@@ -524,26 +585,12 @@ end
         tiempoDesdeUltimoDisparo = 0
     end
 
-if tiempoDesdeUltimoPatron >= tiempoEntrePatrones then
-    local patron = patrones[indicePatronActual]
-
-    if patron.lado == "ambos" then
-        -- [[Crear dos clones del patrón, uno por cada lado y se le asigna ese lado]]
-        local patronIzq = cloneP(patron)
-        patronIzq.lado = "izquierda"
-        local patronDer = cloneP(patron)
-        patronDer.lado = "derecha"
-        --[[se invoca al Spawn de los enemigos 2 para los dos lados]]
-        SpawnTiburonesPatron(patronIzq)
-        SpawnTiburonesPatron(patronDer)
-    else
-        SpawnTiburonesPatron(patron)--[[en caso de que sea solamente izquierdo o derecho]]
+    if tiempoDesdeUltimoPatron >= tiempoEntrePatrones then
+        local patron = patrones[indicePatronActual]
+        SpawnTiburonesPatron(patron)
+        indicePatronActual = indicePatronActual % #patrones + 1
+        tiempoDesdeUltimoPatron = 0
     end
-
-    indicePatronActual = indicePatronActual % #patrones + 1
-    tiempoDesdeUltimoPatron = 0
-end
-
 
     for i = #tiburones, 1, -1 do
         local enemy = tiburones[i]
@@ -568,6 +615,18 @@ end
         end
     end
 
+    for i = #buzos, 1, -1 do
+        local buzo = buzos[i]
+        if not buzo.recogido then
+            local x, y = buzo.body:getPosition()
+            buzo.body:setX(x + buzo.speed * dt)
+            if (buzo.lado == "izquierda" and x > love.graphics.getWidth() + 50) or
+            (buzo.lado == "derecha" and x < -50) then
+                buzo.body:destroy()
+                table.remove(buzos, i)
+            end
+        end
+    end
 
     for i = #disparos, 1, -1 do
         local d = disparos[i]
@@ -632,7 +691,7 @@ end
 
         player.vidas = player.vidas - 1
         if player.vidas <= 0 then
-        love.event.quit()
+            love.event.quit()
         else
         reset()
         end
@@ -664,14 +723,70 @@ end
     end
 
     --[[ buzos ]]
+    -- Recolección de buzos
+    for i = #buzos, 1, -1 do
+        local buzo = buzos[i]
+    
+        if buzo.body and not buzo.body:isDestroyed() and contadorBuzos < maxBuzos then
+            local bx, by = buzo.body:getPosition()
+            local bw, bh = 30, 20 
+    
+            local px, py = player.collider:getPosition()
+            local pw, ph = 40, 20 
+    
+            local paddingX = 15 
+            local paddingY = 10 
+    
+            if math.abs(bx - px) < (bw + pw) / 2 + paddingX and
+               math.abs(by - py) < (bh + ph) / 2 + paddingY then
+    
+                -- Recoger buzo
+                table.insert(buzoRecogido, {
+                    offsetX = (#buzoRecogido - 2) * 10,
+                    offsetY = -30
+                })
+                contadorBuzos = contadorBuzos + 1
+    
+                buzo.body:destroy()
+                table.remove(buzos, i)
+    
+                break 
+            end
+        end
+    end         
+
+    -- Entregar buzos al llegar a la superficie
+    if contadorBuzos > 0 then
+        local _, jugadorY = player.collider:getPosition()
+        if jugadorY <= 50 then
+            contadorBuzos = contadorBuzos - 1
+            buzoRecogido = {}
+            player.oxygen = player.maxOxygen
+        end
+        if (jugadorY <= 50) and contadorBuzos == maxBuzos then
+            contadorBuzos = contadorBuzos - 1
+            buzoRecogido = {}
+            player.oxygen = player.maxOxygen
+            puntuacion = puntuacion + (maxBuzos * 200) --[[ el puntaje aun no funca, funcaba antes pero cuando era de a uno ]]
+        end
+    end
+    
+    --[[ oxigeno ]] 
+    if player.y > 100 then
+        player.oxygen = player.oxygen - dt * 4
+        if player.oxygen <= 0 then
+            reset()
+            player.vidas = player.vidas - 1
+            if player.vidas <= 0 then
+                love.event.quit()
+            end
+        end
+    end
     
 end
 
 function love.draw()
     world:draw()
-    
-    --[[mostrar oxigeno]]
-    love.graphics.print("Oxígeno: " .. math.floor(player.oxigeno), 10, 10)
 
     --[[ dibujo del jugador ]]
     love.graphics.setColor(1, 1, 1)
@@ -694,6 +809,14 @@ function love.draw()
         love.graphics.rectangle('fill', x - 20, y - 10, 40, 20)
     end
 
+    for _, buzo in ipairs(buzos) do
+        if not buzo.recogido then
+            local x, y = buzo.body:getPosition()
+            love.graphics.setColor(0, 0.7, 1)
+            love.graphics.rectangle('fill', x - 15, y - 10, 30, 20)
+        end
+    end
+
     --[[ dibujo de disparos ]]
     love.graphics.setColor(1, 1, 0)
     for _, d in ipairs(disparos) do
@@ -708,6 +831,10 @@ function love.draw()
     --[[ dibujo de marcador de puntos ]]
     love.graphics.setColor(1, 1, 1)
     love.graphics.printf("Puntos: " .. puntuacion, 0, 20, love.graphics.getWidth(), "center")
+
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.printf("Submarino recogidos: " .. contadorBuzos .. "/" .. maxBuzos, 20, 30, love.graphics.getWidth(), "center")
+
 end
 end -- de donde es este fokin end???? [[ increible como todo el juego depende de un end]]
 --[[ al quitarlo genera un error en el update, wtf ]]
