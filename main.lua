@@ -837,4 +837,6 @@ function love.draw()
 
 end
 end -- de donde es este fokin end???? [[ increible como todo el juego depende de un end]]
+--[[ recordatorio: estar pendiente si vamos a modular,
+porque ese end jode todo el fakin codigo ]]
 --[[ al quitarlo genera un error en el update, wtf ]]
