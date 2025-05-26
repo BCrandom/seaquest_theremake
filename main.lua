@@ -21,7 +21,7 @@ function love.load()
     tiempoEntrePatrones = 8 
     tiempoDesdeUltimoPatron = 0
 
-    disparoCooldown = 1
+    disparoCooldown = 0.4
     tiempoDesdeUltimoDisparo = disparoCooldown
    
     --[[ instancia de clases para hitbox de enemigos ]]
@@ -39,7 +39,8 @@ function love.load()
         speed = 200,
         direccionDisparo = 1,
         vivo = true,
-        vidas= 3
+        vidas= 3,
+        oxigeno = 100
     }
     player.collider = world:newCircleCollider(player.x, player.y, 20)
     player.collider:setFixedRotation(true)
@@ -65,17 +66,28 @@ function love.load()
     -delay: para que los enemigos salgan al mismo tiempo
     orientacion: si aparecen en filas de manera horizontal,vertical o mixto
     enemigos: sub objeto para especificar que que tipos de enemgiso quiero en un patron
+    movimientos:diferentes hechos patrones
     ]]
-    patrones = {
-        {lado = "izquierda",delay=true,orientacion='vertical',enemigos={{tipo = "submarino", cantidad = 2, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
-        {lado = "derecha", cantidad = 5, espacio = 80, tipo = "tiburon",orientacion = "mixto"},
-        {lado = "derecha", cantidad = 3, espacio = 50, tipo = "submarino",delay=true,orientacion = "vertical"},
-        {lado = "izquierda", cantidad = 6, espacio = 50, tipo = "submarino",orientacion = "horizontal"},
-        {lado = "izquierda", cantidad = 4, espacio = 70, tipo = "tiburon",orientacion = "vertical"},
-        {lado = "derecha", cantidad = 7, espacio = 50, tipo = "tiburon",orientacion = "vertical"},
+      patrones = {
+        {lado = "ambos",delay=true,orientacion='vertical',movimiento="lineal",enemigos={{tipo = "submarino", cantidad = 2, espacio = 40},{tipo = "tiburon", cantidad = 3, espacio = 40}}},
     }
     indicePatronActual = 1
-
+        desbloqueosRealizados = {} 
+    --[[
+    añadir patrones amedida que va aumentando de puntos
+    ]]
+    desbloqueosPorPuntuacion = {
+    
+    [50] = {
+        {lado = "izquierda", cantidad = 5, espacio = 40, tipo = "submarino", delay=true, orientacion = "horizontal", movimiento = "lineal"}
+    },
+    [100] = {
+        {lado = "derecha", cantidad = 6, espacio = 50, tipo = "tiburon", delay=true, orientacion = "vertical", movimiento = "zigzag"}
+    },
+    
+    }
+    --[[llevar el control de patrones desbloquados y evitar repetir desbloqueos]]
+    desbloqueosRealizados = {}
     --[[ buzos: variales globales ]]
     buzos = {}
     tiempoBuzo = 0
@@ -116,6 +128,16 @@ function reset()
 
     disparoCooldown = 1
     tiempoDesdeUltimoDisparo = disparoCooldown
+    
+    --[[reinicio de patrones al morir]]
+    patrones = {
+    {lado = "ambos", delay = true, orientacion = 'vertical', movimiento = "lineal", enemigos = {
+        {tipo = "submarino", cantidad = 2, espacio = 40},
+        {tipo = "tiburon", cantidad = 3, espacio = 40}
+    }}
+}
+    indicePatronActual = 1
+    desbloqueosRealizados = {} -- reiniciar desbloqueos
 end
 
 --[[ manejo de aparicion de buzos ]]
@@ -218,7 +240,11 @@ function SpawnTiburonesPatron(patron)
                     lado = patron.lado,
                     tipo = grupo.tipo,
                     tiempoRestante = delay,
-                    orientacion = patron.orientacion
+                    orientacion = patron.orientacion,
+                    movimiento = patron.movimiento or "lineal",
+                    tiempo = 0,
+                    baseX = x,
+                    baseY = y,
                 })
             else
                 local enemigo = {}
@@ -234,6 +260,10 @@ function SpawnTiburonesPatron(patron)
                 enemigo.tipo = grupo.tipo
                 enemigo.body:setCollisionClass('Enemy')
                 enemigo.body:setType('kinematic')
+                enemigo.movimiento = patron.movimiento or "lineal"
+                enemigo.tiempo = 0
+                enemigo.baseX = x
+                enemigo.baseY = y
                 
                 --[[ 
                 si el enemigo es un submarino, este debe disparar
@@ -269,8 +299,179 @@ function SpawnDisparo(x, y, direccion, clase)
     end
 end
 
+--[[creacion de cada patron del juego]]
+function actualizarMovimientoEnemigo(enemy, dt)
+    local x, y = enemy.body:getPosition()
+    enemy.tiempo = (enemy.tiempo or 0) + dt
+    local t = enemy.tiempo
+    local speed = enemy.speed --[[velocidad del jugador]]
+    local dir = enemy.lado == "izquierda" and 1 or -1
+
+    if enemy.movimiento == "lineal" then --[[movimiento lineal]]
+        x = x + speed * dt
+    
+    --[[Movimiento vertical
+    oscilatorio con una función seno (oscilación vertical de ±40 píxeles) 
+    para hacer un zigzag.]]
+    elseif enemy.movimiento == "zigzag" then
+        x = x + speed * dt
+        y = enemy.baseY + math.sin(t * 5) * 40  
+    
+    --[[La posición final se calcula con coordenadas polares para que describa un círculo de 
+    radio 60(coseno para x, seno para y), multiplicando la dirección horizontal por dir.]]
+    elseif enemy.movimiento == "circular" then
+    enemy.baseX = enemy.baseX + speed * dt
+    x = enemy.baseX + math.cos(t * 2) * 60 * dir
+    y = enemy.baseY + math.sin(t * 2) * 60
+
+    elseif enemy.movimiento == "sinusoidal" then
+        x = x + speed * dt
+        y = enemy.baseY + math.sin(x / 50) * 30
+    
+
+    --[[Movimiento vertical que alterna entre dos posiciones (+60 o -60 píxeles respecto a la base)
+    con un cambio determinado por el seno
+    ]]
+    elseif enemy.movimiento == "subida_caida" then
+    x = x + speed * dt
+    y = enemy.baseY + (math.abs(math.sin(t * 3)) > 0.5 and -60 or 60)
+    
+    --[[La posición va describiendo una espiral que se aleja del centro.]]
+    elseif enemy.movimiento == "espiral" then
+    enemy.baseX = enemy.baseX + speed * dt
+    local radio = 10 + t * 5  -- [[Radio crece con el tiempo para espiral abierta]]
+    x = enemy.baseX + math.cos(t * 4) * radio * dir
+    y = enemy.baseY + math.sin(t * 4) * radio
+    
+    --[[Movimiento vertical con seno cuyo valor máximo (amplitud) varía entre 0 y 40 según otra función seno]]
+    elseif enemy.movimiento == "osc_amplitud" then
+    x = x + speed * dt
+    local amp = 20 + 20 * math.sin(t)  -- amplitud varía entre 0 y 40
+    y = enemy.baseY + math.sin(t * 5) * amp
+
+    --[[Movimiento vertical oscilatorio complejo que combina tiempo y 
+    posición horizontal para crear una forma tipo "S", utilizando
+    nuevamente la funcion seno
+    ]]
+    elseif enemy.movimiento == "s_shape" then
+    x = x + speed * dt
+    y = enemy.baseY + math.sin(t * 10 + x / 30) * 40
+    
+
+    --[[Se divide el movimiento en 4 fases que corresponden a los 4 lados del cuadrado.
+    En cada fase se mueve una coordenada manteniendo fija la otra.]]
+    elseif enemy.movimiento == "cuadrado" then
+    local lado = 100  -- [[tamaño del lado del cuadrado]]
+    local fase = math.floor(t % 4)
+    local progreso = (t % 1) * lado
+    enemy.baseX = enemy.baseX + speed * dt
+    if fase == 0 then
+        x = enemy.baseX + progreso * dir
+        y = enemy.baseY
+    elseif fase == 1 then
+        x = enemy.baseX + lado * dir
+        y = enemy.baseY + progreso
+    elseif fase == 2 then
+        x = enemy.baseX + (lado - progreso) * dir
+        y = enemy.baseY + lado
+    else
+        x = enemy.baseX
+        y = enemy.baseY + (lado - progreso)
+    end
+
+    --[[Movimiento circular que cambia su radio periódicamente, generando una forma de flor, este cambio lo genera
+    las funciones seno y coseno
+    ]]
+    elseif enemy.movimiento == "flor" then
+
+    local r = 50 + 30 * math.sin(6 * t)  --[[ 6 pétalos]]
+    enemy.baseX = enemy.baseX + speed * dt
+    x = enemy.baseX + r * math.cos(t * 2) * dir
+    y = enemy.baseY + r * math.sin(t * 2)
+    
+    
+
+    elseif enemy.movimiento == "reloj" then
+    local radio = 50
+    local pasos = math.floor(t * 1.5) % 12  -- [[12 posiciones]]
+    local angulo = pasos * (math.pi * 2 / 12)
+        enemy.baseX = enemy.baseX + speed * dt
+    x = enemy.baseX + math.cos(angulo) * radio * dir
+    y = enemy.baseY + math.sin(angulo) * radio
+    
+    --[[
+    El enemigo se mueve entre dos puntos definidos con interpolación lineal.
+    Cada ciclo dura 2 segundos.
+    Cambia entre los dos puntos alternadamente.
+    ]]
+    elseif enemy.movimiento == "patrulla" then
+    enemy.baseX = enemy.baseX + speed * dt
+    local puntos = {{x = enemy.baseX, y = enemy.baseY}, {x = enemy.baseX + 200 * dir, y = enemy.baseY + 100}}
+    local duracion = 2
+    local indice = math.floor(t / duracion) % 2 + 1
+    local sig = (indice % 2) + 1
+    local progreso = (t % duracion) / duracion
+    x = puntos[indice].x + (puntos[sig].x - puntos[indice].x) * progreso
+    y = puntos[indice].y + (puntos[sig].y - puntos[indice].y) * progreso
+
+    --[[Salto vertical entre dos posiciones alternadas cada 0.5 segundos.]]
+    elseif enemy.movimiento == "salto_tramos" then
+    x = x + speed * dt
+    y = enemy.baseY + ((math.floor(t * 2) % 2 == 0) and -50 or 50)
+
+    --[[Su velocidad vertical vy es aleatoria y se mantiene,este
+    Rebota en los límites superior e inferior de los limites establecidos.]]
+    elseif enemy.movimiento == "aleatorio" then
+    x = x + speed * dt
+
+    if not enemy.vy then
+        enemy.vy = (math.random() * 2 - 1) * 50 
+    end
+    y = y + enemy.vy * dt
+    -- [[Limitar el movimiento vertical dentro del limite establecido]]
+    local limiteSuperior = 120
+    local limiteInferior = love.graphics.getHeight() - 120
+    if y < limiteSuperior then
+        y = limiteSuperior
+        enemy.vy = -enemy.vy -- [[rebota invertido la velocidad vertical]]
+    elseif y > limiteInferior then
+        y = limiteInferior
+        enemy.vy = -enemy.vy
+    end
+end
+
+    enemy.body:setPosition(x, y)
+end
+
+
+--[[funcion para clonar el patron, para que pueda salir de los dos lados]]
+function cloneP(t)
+    local copy = {} --[[crea una lista]]
+    for k, v in pairs(t) do--[[rellena esa lista con el for](donde estan los enemigos)]]
+        copy[k] = v
+    end
+    return copy --[[retorna esa lista]]
+end
+
+
 function love.update(dt)
     world:update(dt)
+
+     player.oxigeno = player.oxigeno - dt * 2.8
+    --[[agregar nuevos patrones por puntos]]
+    
+    for puntaje, nuevosPatrones in pairs(desbloqueosPorPuntuacion) do 
+    --[[si puntuacion es menor al puntaje y no ha sido desbloqueado
+    entonces inserta el nuevo patron a la lista de patrones
+    ]]
+    if puntuacion >= puntaje and not desbloqueosRealizados[puntaje] then
+        for _, nuevoPatron in ipairs(nuevosPatrones) do
+            table.insert(patrones, nuevoPatron)
+        end
+        desbloqueosRealizados[puntaje] = true
+    end
+end
+
     --[[manejo de aparicion de los enemigos pendientes]]
     for i = #enemigosDelay, 1, -1 do
         local e = enemigosDelay[i]
@@ -278,13 +479,16 @@ function love.update(dt)
         if e.tiempoRestante <= 0 then
             local enemigo = {}
             local x, y
-            if e.orientacion == "horizontal" then
-                x = e.x
-                y = e.y
+            if e.orientacion == "horizontal" or e.orientacion == "mixto" then
+            x = e.x
+            y = e.y
             else
-                x = e.lado == "izquierda" and -40 or love.graphics.getWidth() + 40
-                y = e.y
-            end
+            -- En vertical o zigzag, conserva la posición original guardada (e.x)
+            -- para que no todos nazcan pegados al borde
+            x = e.x
+            y = e.y
+end
+
             --[[creacion de estos enemigos]]
             enemigo.body = world:newRectangleCollider(x, y, 40, 20)
             enemigo.speed = e.lado == "izquierda" and 100 or -100
@@ -292,6 +496,10 @@ function love.update(dt)
             enemigo.tipo = e.tipo
             enemigo.body:setCollisionClass('Enemy')
             enemigo.body:setType('kinematic')
+            enemigo.movimiento = e.movimiento or "lineal"
+            enemigo.tiempo = 0
+            enemigo.baseX = e.x
+            enemigo.baseY = e.y
 
             if enemigo.tipo == "submarino" then
                 enemigo.tiempoDesdeUltimoDisparo = 0
@@ -316,17 +524,33 @@ function love.update(dt)
         tiempoDesdeUltimoDisparo = 0
     end
 
-    if tiempoDesdeUltimoPatron >= tiempoEntrePatrones then
-        local patron = patrones[indicePatronActual]
-        SpawnTiburonesPatron(patron)
-        indicePatronActual = indicePatronActual % #patrones + 1
-        tiempoDesdeUltimoPatron = 0
+if tiempoDesdeUltimoPatron >= tiempoEntrePatrones then
+    local patron = patrones[indicePatronActual]
+
+    if patron.lado == "ambos" then
+        -- [[Crear dos clones del patrón, uno por cada lado y se le asigna ese lado]]
+        local patronIzq = cloneP(patron)
+        patronIzq.lado = "izquierda"
+        local patronDer = cloneP(patron)
+        patronDer.lado = "derecha"
+        --[[se invoca al Spawn de los enemigos 2 para los dos lados]]
+        SpawnTiburonesPatron(patronIzq)
+        SpawnTiburonesPatron(patronDer)
+    else
+        SpawnTiburonesPatron(patron)--[[en caso de que sea solamente izquierdo o derecho]]
     end
+
+    indicePatronActual = indicePatronActual % #patrones + 1
+    tiempoDesdeUltimoPatron = 0
+end
+
 
     for i = #tiburones, 1, -1 do
         local enemy = tiburones[i]
         local x, y = enemy.body:getPosition()
-        enemy.body:setX(x + enemy.speed * dt)
+        actualizarMovimientoEnemigo(enemy, dt)
+        
+
 
         if enemy.tipo == "submarino" then
             enemy.tiempoDesdeUltimoDisparo = enemy.tiempoDesdeUltimoDisparo + dt
@@ -445,6 +669,9 @@ end
 
 function love.draw()
     world:draw()
+    
+    --[[mostrar oxigeno]]
+    love.graphics.print("Oxígeno: " .. math.floor(player.oxigeno), 10, 10)
 
     --[[ dibujo del jugador ]]
     love.graphics.setColor(1, 1, 1)
@@ -482,5 +709,5 @@ function love.draw()
     love.graphics.setColor(1, 1, 1)
     love.graphics.printf("Puntos: " .. puntuacion, 0, 20, love.graphics.getWidth(), "center")
 end
-end -- de donde es este fokin end????
+end -- de donde es este fokin end???? [[ increible como todo el juego depende de un end]]
 --[[ al quitarlo genera un error en el update, wtf ]]
