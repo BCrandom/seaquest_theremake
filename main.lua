@@ -8,6 +8,8 @@ function love.load()
     love.window.setTitle("Seaquest: Definitive Edition")
     world = wf.newWorld(0, 0, true)
     world:setQueryDebugDrawing(true)
+    --[[fuente tipo pixel art]]
+    pixelFont = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf", 16)
 
     --[[ creacion de arreglos para enemigos, buzos, jugador,puntuacion y delay ]]
     tiburones = {}
@@ -42,11 +44,41 @@ function love.load()
         speed = 200,
         direccionDisparo = 1,
         vivo = true,
-        vidas= 3
+        vidas= 3,
+        oxygen=100
     }
+    player.tiempoMuerte = 0
+    player.tiempoReaparicion = 1.1
+    
+    --[[sprite del jugador]]
+    player.image = love.graphics.newImage("assets/sprites/player/jugador (1).png")
+    local g = anim8.newGrid(64, 64, player.image:getWidth(), player.image:getHeight())
+    player.anim = anim8.newAnimation(g(1, '1-5'), 0.1)
     player.collider = world:newCircleCollider(player.x, player.y, 20)
     player.collider:setFixedRotation(true)
+    frameQuad = g(1, 1)[1] --[[para mostrar las vidas del jugador  pero solo el primer frame del sprite]]
 
+    --[[sprite de muerte del jugador]]
+    player.imageDead= love.graphics.newImage("assets/sprites/player/DeadPlayer.png")
+    local Gdead=anim8.newGrid(64, 64,player.imageDead:getWidth(), player.imageDead:getHeight())
+    player.animDead = anim8.newAnimation(Gdead(1, '1-12'), 0.1)
+
+    --[[sprites del submarino enemigo]]
+    submarinoImage = love.graphics.newImage("assets/sprites/enemy/submarinoEnemigo.png")
+    submarinoGrid = anim8.newGrid(64, 64, submarinoImage:getWidth(), submarinoImage:getHeight())
+    submarinoAnim = anim8.newAnimation(submarinoGrid(1,'1-5'), 0.1)
+
+    --[[sprites de tiburon enemigo]]
+    TiburonImage = love.graphics.newImage("assets/sprites/enemy/tiburones.png")
+    TiburonGrid = anim8.newGrid(64, 64, TiburonImage:getWidth(), TiburonImage:getHeight())
+    TiburonAnim = anim8.newAnimation(TiburonGrid(1,'1-5'), 0.1)
+    
+    --[[sprites de los buzos]]
+    buzoImage=love.graphics.newImage("assets/sprites/buzos/buzos.png")
+    buzosGrid=anim8.newGrid(64, 64,buzoImage:getWidth(), buzoImage:getHeight())
+    buzosAnim=anim8.newAnimation(buzosGrid(1,'1-6'), 0.1)
+
+    --[[buzos]]
     buzoRecogido = nil
     puedeRecogerBuzo = true
     buzoRecogido = {}
@@ -77,23 +109,40 @@ function love.load()
     movimientos:diferentes hechos patrones
     ]]
     patrones = {
-        {lado = "izquierda",delay=true,orientacion='vertical',enemigos={{tipo = "submarino", cantidad = 2, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
-        {lado = "derecha", cantidad = 5, espacio = 80, tipo = "tiburon",orientacion = "mixto"},
-        {lado = "derecha", cantidad = 3, espacio = 50, tipo = "submarino",delay=true,orientacion = "vertical"},
-        {lado = "izquierda", cantidad = 6, espacio = 50, tipo = "submarino",orientacion = "horizontal"},
-        {lado = "izquierda", cantidad = 4, espacio = 70, tipo = "tiburon",orientacion = "vertical"},
-        {lado = "derecha", cantidad = 7, espacio = 50, tipo = "tiburon",orientacion = "vertical"},
+        {lado = "derecha", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical"},
+        {lado = "ambos",delay=true,orientacion='vertical',movimiento="lineal",enemigos={{tipo = "submarino", cantidad = 2, espacio = 40},{tipo = "tiburon", cantidad = 3, espacio = 40}}},
     }
     indicePatronActual = 1
+        desbloqueosRealizados = {} 
+    --[[
+    añadir patrones amedida que va aumentando de puntos
+    ]]
+    desbloqueosPorPuntuacion = {
+    
+    [50] = {
+        {lado = "izquierda", cantidad = 5, espacio = 40, tipo = "submarino", delay=true, orientacion = "horizontal", movimiento = "lineal"}
+    },
+    [100] = {
+        {lado = "derecha", cantidad = 6, espacio = 50, tipo = "tiburon", delay=true, orientacion = "vertical", movimiento = "zigzag"}
+    },
+    
+    }
+    --[[llevar el control de patrones desbloquados y evitar repetir desbloqueos]]
+    desbloqueosRealizados = {}
 
     --[[ buzos: variales globales ]]
     buzos = {}
     tiempoBuzo = 0
-    buzoCooldown = 5
+    buzoCooldown = 0.1
     buzoSpeed = 30
     maxBuzosSpawn = 4
     buzoSize = 20
 
+    --[[sountrack y efectos]]
+    MusicDisparoPlayer=love.audio.newSource("assets/sounds/disparo","static")
+    MusicDisparoEnemy=love.audio.newSource("assets/sounds/disparo3","static")
+    MusicDeadEnemy=love.audio.newSource("assets/sounds/deadenemy2","static")
+    MusicDeadPlayer=love.audio.newSource("assets/sounds/explosionplayer","static")
 end
 
 --[[funcion para resetear cuando el jugador pierde una vida]]
@@ -124,6 +173,14 @@ function reset()
     player.y = 100
     player.collider:setPosition(player.x, player.y)
 
+    -- [[Resetear jugador al centro arriba]]
+    player.x = 400
+    player.y = 100
+    player.collider:setPosition(player.x, player.y)
+
+    --[[resetear oxigeno]]
+    player.oxygen=100
+
     -- [[Resetear oleadas o patrón de aparición]]
     indicePatronActual = 1
     tiempoEnemigo = 0
@@ -132,6 +189,16 @@ function reset()
 
     disparoCooldown = 1
     tiempoDesdeUltimoDisparo = disparoCooldown
+
+        --[[reinicio de patrones al morir]]
+    patrones = {
+    {lado = "ambos", delay = true, orientacion = 'vertical', movimiento = "lineal", enemigos = {
+        {tipo = "submarino", cantidad = 2, espacio = 40},
+        {tipo = "tiburon", cantidad = 3, espacio = 40}
+    }}
+}
+    indicePatronActual = 1
+    desbloqueosRealizados = {} -- reiniciar desbloqueos
 end
 
 --[[ manejo de aparicion de buzos ]]
@@ -144,11 +211,13 @@ function spawnBuzos(x, y)
         speed = buzoSpeed,
         state = "normal",
         direction = -1,
-        collider = world:newRectangleCollider(x, y, buzoSize, buzoSize),
-        temporizador = 0
+        body = world:newRectangleCollider(x, y, buzoSize, buzoSize),
+        temporizador = 0,
+        image=buzoImage,
+        anim= buzosAnim:clone()
     }
-    buzo.collider:setCollisionClass("buzo")
-    buzo.collider:setObject(buzo)
+    buzo.body:setCollisionClass("buzo")
+    buzo.body:setObject(buzo)
     table.insert(buzos, buzo)
 end
 
@@ -239,6 +308,8 @@ function SpawnTiburonesPatron(patron)
                     tiempo = 0,
                     baseX = x,
                     baseY = y,
+                    image=TiburonImage,
+                    anim= TiburonAnim:clone()
                 })
             else
                 local enemigo = {}
@@ -258,6 +329,8 @@ function SpawnTiburonesPatron(patron)
                 enemigo.tiempo = 0
                 enemigo.baseX = x
                 enemigo.baseY = y
+                enemigo.image =TiburonImage
+                enemigo.anim = TiburonAnim:clone()
                 
                 --[[ 
                 si el enemigo es un submarino, este debe disparar
@@ -266,6 +339,8 @@ function SpawnTiburonesPatron(patron)
                 if enemigo.tipo == "submarino" then
                     enemigo.tiempoDesdeUltimoDisparo = 0
                     enemigo.tiempoEntreDisparos = 2
+                    enemigo.image = submarinoImage
+                    enemigo.anim = submarinoAnim:clone()
                 end
                 --[[ se inserta en la lista]]
                 table.insert(tiburones, enemigo)
@@ -328,6 +403,8 @@ function SpawnBuzosPatron(patron)
             buzo.speed = direccionX * 60
             buzo.lado = patron.lado
             buzo.recogido = false
+            buzo.image=buzoImage
+            buzo.anim= buzosAnim:clone()
             table.insert(buzos, buzo)
         end
 
@@ -515,12 +592,27 @@ function cloneP(t)
 end
 
 
+function matarJugador()
+    if player.vivo then
+        player.vivo = false
+        player.tiempoMuerte = 0
+        player.oxygen=100
+        MusicDeadPlayer:stop()
+        MusicDeadPlayer:play()
+    end
+end
+
 function love.update(dt)
     world:update(dt)
 
-     player.oxigeno = player.oxigeno - dt * 2.8
+    --[[actualizacion de sprites]]
+    player.anim:update(dt)
+
+    --[[easter egg]]
+    if puntuacion == 50000 then
+    MusicDeadEnemy=love.audio.newSource("assets/sounds/aester egg.mp3","static")
+    end
     --[[agregar nuevos patrones por puntos]]
-    
     for puntaje, nuevosPatrones in pairs(desbloqueosPorPuntuacion) do 
     --[[si puntuacion es menor al puntaje y no ha sido desbloqueado
     entonces inserta el nuevo patron a la lista de patrones
@@ -561,10 +653,14 @@ end
             enemigo.tiempo = 0
             enemigo.baseX = e.x
             enemigo.baseY = e.y
+            enemigo.image =TiburonImage
+            enemigo.anim = TiburonAnim:clone()
 
             if enemigo.tipo == "submarino" then
                 enemigo.tiempoDesdeUltimoDisparo = 0
                 enemigo.tiempoEntreDisparos = 2
+                enemigo.image = submarinoImage
+                enemigo.anim = submarinoAnim:clone()
             end
             --[[se agrega a la lista de tiburones(la activa de los enemigos) y se remueve
             de los enemigos pendientes
@@ -574,6 +670,20 @@ end
         end
     end
 
+    if not player.vivo then
+    player.animDead:update(dt)
+    player.tiempoMuerte = player.tiempoMuerte + dt
+
+    if player.tiempoMuerte >= player.tiempoReaparicion then
+        -- [[Reaparecer jugador]]
+        player.vivo = true
+        player.vidas = player.vidas - 1
+        reset()
+    end
+
+    return -- [[Salir del update para evitar que el jugador haga otras acciones]]
+end
+
     --[[ variables para manejar el disparo del jugador ]]
     tiempoDesdeUltimoDisparo = tiempoDesdeUltimoDisparo + dt
     tiempoDesdeUltimoPatron = tiempoDesdeUltimoPatron + dt
@@ -582,12 +692,28 @@ end
     if love.keyboard.isDown("space") and tiempoDesdeUltimoDisparo >= disparoCooldown then
         local offsetX = player.direccionDisparo * 20
         SpawnDisparo(player.x + offsetX, player.y, player.direccionDisparo, 'DisparoJugador')
+        MusicDisparoPlayer:stop()
+        MusicDisparoPlayer:play()
         tiempoDesdeUltimoDisparo = 0
     end
 
     if tiempoDesdeUltimoPatron >= tiempoEntrePatrones then
         local patron = patrones[indicePatronActual]
-        SpawnTiburonesPatron(patron)
+    
+        if patron.lado == "ambos" then
+        -- [[Crear dos clones del patrón, uno por cada lado y se le asigna ese lado]]
+        local patronIzq = cloneP(patron)
+        patronIzq.lado = "izquierda"
+        local patronDer = cloneP(patron)
+        patronDer.lado = "derecha"
+        --[[se invoca al Spawn de los enemigos 2 para los dos lados]]
+        SpawnTiburonesPatron(patronIzq)
+        SpawnTiburonesPatron(patronDer)
+    else
+        SpawnTiburonesPatron(patron)--[[en caso de que sea solamente izquierdo o derecho]]
+        SpawnBuzosPatron(patron)
+    end
+
         indicePatronActual = indicePatronActual % #patrones + 1
         tiempoDesdeUltimoPatron = 0
     end
@@ -597,15 +723,23 @@ end
         local x, y = enemy.body:getPosition()
         actualizarMovimientoEnemigo(enemy, dt)
         
-
+        if enemy.tipo == "tiburon" and enemy.anim then
+        enemy.anim:update(dt)
+        end
 
         if enemy.tipo == "submarino" then
             enemy.tiempoDesdeUltimoDisparo = enemy.tiempoDesdeUltimoDisparo + dt
             if enemy.tiempoDesdeUltimoDisparo >= enemy.tiempoEntreDisparos then
                 local dir = enemy.lado == "izquierda" and 1 or -1
                 SpawnDisparo(x, y, dir, 'DisparoEnemy')
+                MusicDisparoEnemy:stop()
+                MusicDisparoEnemy:play()
                 enemy.tiempoDesdeUltimoDisparo = 0
             end
+        end
+        
+        if enemy.tipo == "submarino" and enemy.anim then
+        enemy.anim:update(dt)
         end
 
         if (enemy.lado == "izquierda" and x > love.graphics.getWidth() + 50) or
@@ -617,6 +751,7 @@ end
 
     for i = #buzos, 1, -1 do
         local buzo = buzos[i]
+        buzo.anim:update(dt)
         if not buzo.recogido then
             local x, y = buzo.body:getPosition()
             buzo.body:setX(x + buzo.speed * dt)
@@ -653,6 +788,8 @@ end
                 for j = #tiburones, 1, -1 do
                     if tiburones[j].body == c then
                         c:destroy()
+                        MusicDeadEnemy:stop()
+                        MusicDeadEnemy:play()
                         table.remove(tiburones, j)
                         puntuacion = puntuacion + 20
                         break
@@ -689,11 +826,9 @@ end
             end
         end
 
-        player.vidas = player.vidas - 1
+        matarJugador()
         if player.vidas <= 0 then
             love.event.quit()
-        else
-        reset()
         end
 
         break --[[esto para romper el for ya que 
@@ -713,8 +848,7 @@ end
             end
         end
 
-        player.vidas = player.vidas - 1
-        reset()
+        matarJugador()
         if player.vidas <= 0 then
             love.event.quit()
         end
@@ -775,8 +909,7 @@ end
     if player.y > 100 then
         player.oxygen = player.oxygen - dt * 4
         if player.oxygen <= 0 then
-            reset()
-            player.vidas = player.vidas - 1
+            matarJugador()
             if player.vidas <= 0 then
                 love.event.quit()
             end
@@ -788,9 +921,20 @@ end
 function love.draw()
     world:draw()
 
-    --[[ dibujo del jugador ]]
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.circle("fill", player.x, player.y, 20)
+    --[[ dibujo del jugador y su muerte]]
+    if player.vivo then
+    player.anim:draw(player.image, player.x, player.y, 0, -player.direccionDisparo, 1, 32, 32)
+    else
+    player.animDead:draw(player.imageDead, player.x, player.y, 0, -player.direccionDisparo, 1, 32, 32)
+    end
+    --[[dibujos de vida del jugador]]
+        if player.vivo then
+        for i = 1, player.vidas do
+            local vidaX = 250 + (i - 1) * 40 
+            local vidaY = 10
+            love.graphics.draw(player.image,frameQuad,vidaX, vidaY, 0, -0.5, 0.5)
+        end
+    end
 
     --[[ dibujo de seguidilla de circulos que se crean detras del jugador para generar movimiento ]]
     love.graphics.setColor(0, 0, 1)
@@ -802,18 +946,20 @@ function love.draw()
     for _, enemigo in ipairs(tiburones) do
         local x, y = enemigo.body:getPosition()
         if enemigo.tipo == "tiburon" then
-            love.graphics.setColor(1, 0, 0)
-        elseif enemigo.tipo == "submarino" then
-            love.graphics.setColor(0.5, 0, 0.5)
+        love.graphics.setColor(1, 1, 1) 
+        enemigo.anim:draw(enemigo.image, x,y, 0, enemigo.lado == "izquierda" and -1 or 1, 1, 32,32)
         end
-        love.graphics.rectangle('fill', x - 20, y - 10, 40, 20)
+        if enemigo.tipo == "submarino"  then
+            love.graphics.setColor(1, 1, 1) 
+         enemigo.anim:draw(enemigo.image, x,y, 0, enemigo.lado == "izquierda" and -1 or 1, 1, 32,32)
+        end
     end
 
     for _, buzo in ipairs(buzos) do
         if not buzo.recogido then
             local x, y = buzo.body:getPosition()
-            love.graphics.setColor(0, 0.7, 1)
-            love.graphics.rectangle('fill', x - 15, y - 10, 30, 20)
+            love.graphics.setColor(1, 1, 1) 
+            buzo.anim:draw(buzo.image,x,y,0, buzo.lado == "izquierda" and -1 or 1, 1, 32,32)
         end
     end
 
@@ -829,11 +975,13 @@ function love.draw()
     end
 
     --[[ dibujo de marcador de puntos ]]
+    love.graphics.setFont(pixelFont)
     love.graphics.setColor(1, 1, 1)
-    love.graphics.printf("Puntos: " .. puntuacion, 0, 20, love.graphics.getWidth(), "center")
+    love.graphics.printf(puntuacion, 0, 20, love.graphics.getWidth(), "center")
 
     love.graphics.setColor(1, 1, 1)
-    love.graphics.printf("Submarino recogidos: " .. contadorBuzos .. "/" .. maxBuzos, 20, 30, love.graphics.getWidth(), "center")
+    love.graphics.printf("Submarino recogidos: " .. contadorBuzos .. "/" .. maxBuzos, 20, 53, love.graphics.getWidth(), "center")
+
 
 end
 end -- de donde es este fokin end???? [[ increible como todo el juego depende de un end]]
