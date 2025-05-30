@@ -2,6 +2,7 @@
 
 local wf = require("lib/windfield")
 local anim8 = require('lib/anim8/anim8')
+local sti = require('lib/sti')
 
 function love.load()
     --[[ configuraciones basicas de la ventana y uso de fisicas ]]
@@ -10,6 +11,10 @@ function love.load()
     world:setQueryDebugDrawing(true)
     --[[fuente tipo pixel art]]
     pixelFont = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf", 16)
+
+    --[[ mapa ]]
+    
+    gameMap = sti('assets/sprites/map/background.lua')
 
     --[[ creacion de arreglos para enemigos, buzos, jugador,puntuacion y delay ]]
     tiburones = {}
@@ -40,12 +45,13 @@ function love.load()
     --[[ inicializacion de variables del jugador ]]
     player = {
         x = 400,
-        y = 100,
+        y = 96,
         speed = 200,
         direccionDisparo = 1,
         vivo = true,
-        vidas= 3,
-        oxygen=100
+        vidas = 3,
+        oxygen = 100,
+        maxOxygen = 100
     }
     player.tiempoMuerte = 0
     player.tiempoReaparicion = 1.1
@@ -86,8 +92,8 @@ function love.load()
     maxBuzos = 6
 
     -- Creación de los bordes de la pantalla
-    wall_top = world:newRectangleCollider(0, 0, love.graphics.getWidth(), 1)
-    wall_bottom = world:newRectangleCollider(0, love.graphics.getHeight()-1, love.graphics.getWidth(), 1)
+    wall_top = world:newRectangleCollider(0, 0, love.graphics.getWidth(), 75)
+    wall_bottom = world:newRectangleCollider(0, love.graphics.getHeight()-95, love.graphics.getWidth(), 1)
     wall_left = world:newRectangleCollider(0, 0, 1, love.graphics.getHeight())
     wall_right = world:newRectangleCollider(love.graphics.getWidth()-1, 0, 1, love.graphics.getHeight())
 
@@ -138,6 +144,8 @@ function love.load()
     maxBuzosSpawn = 4
     buzoSize = 20
 
+    tankImage = love.graphics.newImage("assets/sprites/oxygen/oxygentank.png")
+
     --[[sountrack y efectos]]
     MusicDisparoPlayer=love.audio.newSource("assets/sounds/disparo","static")
     MusicDisparoEnemy=love.audio.newSource("assets/sounds/disparo3","static")
@@ -175,11 +183,11 @@ function reset()
 
     -- [[Resetear jugador al centro arriba]]
     player.x = 400
-    player.y = 100
+    player.y = 96
     player.collider:setPosition(player.x, player.y)
 
     --[[resetear oxigeno]]
-    player.oxygen=100
+    player.oxygen = 100
 
     -- [[Resetear oleadas o patrón de aparición]]
     indicePatronActual = 1
@@ -527,8 +535,6 @@ function actualizarMovimientoEnemigo(enemy, dt)
     x = enemy.baseX + r * math.cos(t * 2) * dir
     y = enemy.baseY + r * math.sin(t * 2)
     
-    
-
     elseif enemy.movimiento == "reloj" then
     local radio = 50
     local pasos = math.floor(t * 1.5) % 12  -- [[12 posiciones]]
@@ -749,6 +755,7 @@ end
         end
     end
 
+    --[[ dibujo de los buzos ]]
     for i = #buzos, 1, -1 do
         local buzo = buzos[i]
         buzo.anim:update(dt)
@@ -835,7 +842,6 @@ end
                 solo se cuenta una colisión por frame]]
     end
 
-
         local colisionBalas = world:queryCircleArea(player.x, player.y, 21, {'DisparoEnemy'})
 
         for _, c in ipairs(colisionBalas) do
@@ -892,17 +898,19 @@ end
     -- Entregar buzos al llegar a la superficie
     if contadorBuzos > 0 then
         local _, jugadorY = player.collider:getPosition()
-        if jugadorY <= 50 then
+        if jugadorY <= 100 then
             contadorBuzos = contadorBuzos - 1
             buzoRecogido = {}
             player.oxygen = player.maxOxygen
-        end
-        if (jugadorY <= 50) and contadorBuzos == maxBuzos then
+            puntuacion = puntuacion + 200
+        elseif jugadorY <= 100 and contadorBuzos == maxBuzos then
             contadorBuzos = contadorBuzos - 1
             buzoRecogido = {}
             player.oxygen = player.maxOxygen
-            puntuacion = puntuacion + (maxBuzos * 200) --[[ el puntaje aun no funca, funcaba antes pero cuando era de a uno ]]
+            puntuacion = puntuacion + 200
         end
+    --[[ elseif player.y <= 100 then
+        matarJugador() ]]
     end
     
     --[[ oxigeno ]] 
@@ -919,16 +927,20 @@ end
 end
 
 function love.draw()
+
+    gameMap:drawLayer(gameMap.layers["notwater"])
+    gameMap:drawLayer(gameMap.layers["realwater"])
+
     world:draw()
 
     --[[ dibujo del jugador y su muerte]]
     if player.vivo then
-    player.anim:draw(player.image, player.x, player.y, 0, -player.direccionDisparo, 1, 32, 32)
+        player.anim:draw(player.image, player.x, player.y, 0, -player.direccionDisparo, 1, 32, 32)
     else
-    player.animDead:draw(player.imageDead, player.x, player.y, 0, -player.direccionDisparo, 1, 32, 32)
+        player.animDead:draw(player.imageDead, player.x, player.y, 0, -player.direccionDisparo, 1, 32, 32)
     end
     --[[dibujos de vida del jugador]]
-        if player.vivo then
+    if player.vivo then
         for i = 1, player.vidas do
             local vidaX = 250 + (i - 1) * 40 
             local vidaY = 10
@@ -936,11 +948,13 @@ function love.draw()
         end
     end
 
-    --[[ dibujo de seguidilla de circulos que se crean detras del jugador para generar movimiento ]]
-    love.graphics.setColor(0, 0, 1)
+    gameMap:drawLayer(gameMap.layers["realwaterwave"])
+
+    --[[ dibujo de limites del mapa ]]
+    --[[ love.graphics.setColor(0, 0, 1)
     love.graphics.setLineWidth(2)
     love.graphics.line(0, 100, love.graphics.getWidth(), 100)
-    love.graphics.line(0, love.graphics.getHeight() - 100, love.graphics.getWidth(), love.graphics.getHeight() - 100)
+    love.graphics.line(0, love.graphics.getHeight() - 100, love.graphics.getWidth(), love.graphics.getHeight() - 100) ]]
 
     --[[ dibujo de enemigos, ambos rectangulos pero se distinguen por color ]]
     for _, enemigo in ipairs(tiburones) do
@@ -979,9 +993,42 @@ function love.draw()
     love.graphics.setColor(1, 1, 1)
     love.graphics.printf(puntuacion, 0, 20, love.graphics.getWidth(), "center")
 
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.printf("Submarino recogidos: " .. contadorBuzos .. "/" .. maxBuzos, 20, 53, love.graphics.getWidth(), "center")
+    --[[ contador de buzos ]]
+--[[     love.graphics.setColor(1, 1, 1)
+    love.graphics.printf(contadorBuzos .. "/" .. maxBuzos, 20, 53, love.graphics.getWidth(), "center") ]]
+    for i = 1, contadorBuzos do
+        local buzoX = 500 + (i - 1) * 40
+        local buzoY = 10
+        love.graphics.draw(buzoImage, frameQuad, buzoX, buzoY, 0, -0.5, 0.5)
+    end
 
+    --[[ barra de oxigeno ]]
+    local tankX = 30
+    local tankY = 1
+    local scale = 3
+
+    local tankWidth = tankImage:getWidth() * scale - 2
+    local tankHeight = tankImage:getHeight() * scale - 45
+
+    local padding = 3 * scale
+    local fillWidth = tankWidth - padding * 2
+    local fillHeight = tankHeight - padding * 2
+
+    local oxygenRatio = player.oxygen / player.maxOxygen
+
+    -- Dibujo del relleno
+    love.graphics.setColor(0.8, 0.8, 1)
+    love.graphics.rectangle(
+        "fill",
+        tankX + padding - 9,
+        tankY + padding * 3.5,
+        fillWidth * oxygenRatio,
+        fillHeight
+    )
+
+    -- Dibujo de la imagen del tanque encima
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.draw(tankImage, tankX, tankY, 0, scale, scale)
 
 end
 end -- de donde es este fokin end???? [[ increible como todo el juego depende de un end]]
