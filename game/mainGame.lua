@@ -1425,7 +1425,7 @@ end
             end
     
             contadorBuzos = contadorBuzos - 1
-            table.remove(buzoRecogido)  -- Asegúrate de usar remove para quitar un buzo
+            table.remove(buzoRecogido) 
             player.oxygen = player.maxOxygen
             puntuacion = puntuacion + 200
     
@@ -1433,12 +1433,11 @@ end
             if contadorBuzos == 0 and #buzoRecogido == 0 then
                 entregandoBuzos = false
     
-                if maxBuzos == 6 then
-                    -- BONUS POR RESCATE COMPLETO
-                    puntuacion = puntuacion + 1000  -- Bonus extra
+                if contadorBuzos == 6 then
+                    puntuacion = puntuacion + 1000
                     player.oxygen = player.maxOxygen
                     mostrarAnimacionRescate = true
-                    animacionRescateTimer = 2 -- Duración en segundos
+                    animacionRescateTimer = 2
     
                     -- Reiniciar oleada de enemigos
                     reiniciarOleadaEnemigos()
