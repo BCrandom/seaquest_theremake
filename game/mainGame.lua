@@ -1472,7 +1472,7 @@ function game.draw()
     gameMap:drawLayer(gameMap.layers["notwater"])
     gameMap:drawLayer(gameMap.layers["realwater"])
 
-    world:draw()
+    --[[ world:draw() ]]
 
     --[[ dibujo del jugador y su muerte]]
     if player.vivo then

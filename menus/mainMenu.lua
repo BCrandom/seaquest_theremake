@@ -7,7 +7,7 @@ function menu.load()
         x = 300,
         y = 250,
         w = 200,
-        h = 50,
+        h = 70,
         txt = "Presiona Space para empezar",
         clicked = false
     }
@@ -17,7 +17,7 @@ function menu.update(dt)
     if love.keyboard.isDown("space") then
         menu.button.txt = "¡Clic detectado!"
         menu.button.clicked = true
-    else
+    --[[ else
         menu.button.txt = "¡Haz clic aquí!"
         --[[ menu.button.clicked = false ]]
     end
@@ -32,7 +32,7 @@ function menu.draw()
     love.graphics.rectangle("fill", menu.button.x, menu.button.y, menu.button.w, menu.button.h)
 
     love.graphics.setColor(1, 1, 1)
-    love.graphics.printf(menu.button.txt, menu.button.x, menu.button.y + (menu.button.h / 2) - 10, menu.button.w, "center")
+    love.graphics.printf(menu.button.txt, menu.button.x, menu.button.y + (menu.button.h / 2) - 15, menu.button.w, "center")
 end
 
 return menu
