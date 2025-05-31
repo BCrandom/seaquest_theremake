@@ -8,7 +8,7 @@ function menu.load()
         y = 250,
         w = 200,
         h = 50,
-        txt = "Presiona aquí",
+        txt = "Presiona Space para empezar",
         clicked = false
     }
 end
