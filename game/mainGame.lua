@@ -29,22 +29,39 @@ function game.load()
 
     --[[ variables de tiempo ]]
     tiempoEnemigo = 0
-    tiempoEntrePatrones = 8 
+    tiempoEntrePatrones = 9
     tiempoDesdeUltimoPatron = 0
 
     disparoCooldown = 0.4
     tiempoDesdeUltimoDisparo = disparoCooldown
-   
+    --[[variables de oledas de jefes]]
+    oleadaJefeActiva = false
+    avisoOleadaJefe = false
+    puntosUltimaOleadaJefe = 0
+    nivelOleadaJefe = 0
+    puntosEntreOleadas = 1700            
+    duracionOleadaJefe = 550
+
+    --[[variables de oleadas de patrones aleatorias]]
+    ultimoPuntajePatron = 0
+    intervaloPuntajePatron = 600
+
+
+
+
     --[[ instancia de clases para hitbox de enemigos ]]
     world:addCollisionClass('Enemy')
     -- clase buzo
     world:addCollisionClass('buzo')
     world:addCollisionClass('DisparoJugador')
     world:addCollisionClass('DisparoEnemy')
+        world:addCollisionClass('PowerUp')
+    world:addCollisionClass('Player')
     --[[ validacion: que las balas del enemigo no choquen con las del jugador y viceversa ]]
     world:collisionClassesSet('DisparoJugador', {ignores = {'DisparoJugador', 'DisparoEnemy'}})
     world:collisionClassesSet('DisparoEnemy', {ignores = {'DisparoEnemy', 'DisparoJugador'}})
-
+    world:collisionClassesSet('PowerUp', {ignores = {'DisparoJugador', 'DisparoEnemy', 'Enemy', 'buzo'}})
+    
     --[[ inicializacion de variables del jugador ]]
     game.player = {
         x = 400,
@@ -73,21 +90,60 @@ function game.load()
     local Gdead=anim8.newGrid(64, 64,player.imageDead:getWidth(), player.imageDead:getHeight())
     player.animDead = anim8.newAnimation(Gdead(1, '1-12'), 0.1)
 
+        --[[sprite misil del jugador]]
+    misilplayer=love.graphics.newImage("assets/sprites/player/misilPlayer.png")
+    local Gmisil=anim8.newGrid(48, 48,misilplayer:getWidth(), misilplayer:getHeight())
+    misilAnimP=anim8.newAnimation(Gmisil(1, '1-2'), 0.1)
+
     --[[sprites del submarino enemigo]]
     submarinoImage = love.graphics.newImage("assets/sprites/enemy/submarinoEnemigo.png")
     submarinoGrid = anim8.newGrid(64, 64, submarinoImage:getWidth(), submarinoImage:getHeight())
     submarinoAnim = anim8.newAnimation(submarinoGrid(1,'1-5'), 0.1)
+
+        --[[sprites del misil enemigo]]
+    misilEnemigo=love.graphics.newImage("assets/sprites/enemy/misilEnemy.png")
+    misilEneGrid=anim8.newGrid(48, 48, misilEnemigo:getWidth(), misilEnemigo:getHeight())
+    misilEneAnim=anim8.newAnimation(misilEneGrid(1,'1-2'), 0.1)
 
     --[[sprites de tiburon enemigo]]
     TiburonImage = love.graphics.newImage("assets/sprites/enemy/tiburones.png")
     TiburonGrid = anim8.newGrid(64, 64, TiburonImage:getWidth(), TiburonImage:getHeight())
     TiburonAnim = anim8.newAnimation(TiburonGrid(1,'1-5'), 0.1)
     
+--[[SPRITES DE JEFES]]
+    
+    --[[submarino enemigo jefes]]
+    submarinoJefeImage=love.graphics.newImage("assets/sprites/Boss/submarinoEnemigoBoss.png")
+    submarinoJefeGrid=anim8.newGrid(64, 64, submarinoJefeImage:getWidth(), submarinoJefeImage:getHeight())
+    submarinoJefeAnim=anim8.newAnimation(submarinoJefeGrid(1,'1-6'), 0.1)
+    
+    --[[tiburon jefes]]
+    TiburonJefeImage=love.graphics.newImage("assets/sprites/Boss/tiburonBoss.png")
+    TiburonJefeGrid=anim8.newGrid(64, 64, TiburonJefeImage:getWidth(), TiburonJefeImage:getHeight())
+    TiburonJefeAnim=anim8.newAnimation(TiburonJefeGrid(1,'1-5'), 0.1)
+    
+    --[[misiles jefes]]
+    misilEnemigoJefes=love.graphics.newImage("assets/sprites/Boss/misilEnemyBoss.png")
+    misilEneGridJefes=anim8.newGrid(48, 48, misilEnemigoJefes:getWidth(), misilEnemigoJefes:getHeight())
+    misilEneAnimJefes=anim8.newAnimation(misilEneGridJefes(1,'1-2'), 0.1)
+
     --[[sprites de los buzos]]
     buzoImage=love.graphics.newImage("assets/sprites/buzos/buzos.png")
     buzosGrid=anim8.newGrid(64, 64,buzoImage:getWidth(), buzoImage:getHeight())
     buzosAnim=anim8.newAnimation(buzosGrid(1,'1-6'), 0.1)
-
+    
+    --[[sprites de power Ups]]
+    
+    --[[disparo rapido]]
+    DispaPowerImage=love.graphics.newImage("assets/sprites/power Ups/DisparoRapido.png")
+    DispaPowerGrid=anim8.newGrid(64, 64,DispaPowerImage:getWidth(), DispaPowerImage:getHeight())
+    DisparoAnim=anim8.newAnimation(DispaPowerGrid(1,'1-2'), 0.1)
+    
+    --[[importal]]
+    InmorPowerImage=love.graphics.newImage("assets/sprites/power Ups/inmortal.png")
+    InmorPowerGrid=anim8.newGrid(64, 64,InmorPowerImage:getWidth(),InmorPowerImage:getHeight())
+    InmorAnim=anim8.newAnimation(InmorPowerGrid(1,'1-2'), 0.1)
+    
     --[[buzos]]
     buzoRecogido = nil
     puedeRecogerBuzo = true
@@ -121,6 +177,14 @@ function game.load()
     patrones = {
         {lado = "derecha", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical"},
         {lado = "ambos",delay=true,orientacion='vertical',movimiento="lineal",enemigos={{tipo = "submarino", cantidad = 2, espacio = 40},{tipo = "tiburon", cantidad = 3, espacio = 40}}},
+        {lado="derecha",orientacion='vertical',enemigos={{ tipo = "submarino", cantidad = 2, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
+        {lado="izquierda",orientacion='vertical',enemigos={{ tipo = "submarino", cantidad = 3, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
+        {lado="IgualLados",orientacion='vertical',tipo='tiburon',cantidad=4,espacio=40},
+        {lado="IgualLados",orientacion='vertical',tipo='submarino',cantidad=4,espacio=50},
+        {lado="izquierda", delay=true,orientacion='vertical',tipo='submarino',cantidad=2,espacio=50},
+        {lado="derecha", delay=true,orientacion='vertical',tipo='tiburon',cantidad=4,espacio=40},
+        {lado="derecha", delay=true,orientacion='vertical',movimiento='zigzag',enemigos={{ tipo = "submarino", cantidad = 2, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
+    
     }
     indicePatronActual = 1
         desbloqueosRealizados = {} 
@@ -128,17 +192,40 @@ function game.load()
     añadir patrones amedida que va aumentando de puntos
     ]]
     desbloqueosPorPuntuacion = {
-    
-    [50] = {
-        {lado = "izquierda", cantidad = 5, espacio = 40, tipo = "submarino", delay=true, orientacion = "horizontal", movimiento = "lineal"}
+    [600] = {
+        {lado = "ambos", orientacion = "vertical",enemigos={{lado="derecha",tipo = "submarino", cantidad = 3, espacio = 50,movimiento='zigzag'},{lado="izquierda",tipo = "tiburon", cantidad = 4, espacio = 40,movimiento='sinusoidal'}}}
     },
-    [100] = {
-        {lado = "derecha", cantidad = 6, espacio = 50, tipo = "tiburon", delay=true, orientacion = "vertical", movimiento = "zigzag"}
+    [800] = {
+        {lado = "ambos", orientacion = "vertical",enemigos={{lado="derecha",tipo = "tiburon", cantidad = 3, espacio = 40,movimiento='zigzag'},{lado="izquierda",tipo = "tiburon", cantidad = 4, espacio = 50,movimiento='espiral'}}}
     },
-    
+        [1000] = {
+        {lado = "ambos", orientacion = "vertical",delay=true,enemigos={{lado="derecha",tipo = "submarino", cantidad = 2, espacio = 40,movimiento='lineal'},{lado="izquierda",tipo = "submarino", cantidad = 4, espacio = 60,movimiento='lineal'}}}
+    },
+        [1500] = {
+        {lado = "ambos", orientacion = "vertical",enemigos={{lado="derecha",tipo = "submarino", cantidad = 2, espacio = 40,movimiento='s_shape'},{lado="izquierda",tipo = "tiburon", cantidad = 2, espacio = 40,movimiento='sinusoidal'}}}
+    },
+        [1700] = {
+        {lado = "ambos", orientacion = "vertical",enemigos={{lado="derecha",tipo = "submarino", cantidad = 2, espacio = 50,movimiento='lineal'},{lado="izquierda",tipo = "tiburon", cantidad = 3, espacio = 60,movimiento='s_shape'}}}
+    },
+        [2000] = {
+        {lado = "ambos", orientacion = "vertical",enemigos={{lado="derecha",tipo = "submarino", cantidad = 2, espacio = 60,movimiento='s_shape'},{lado="izquierda",tipo = "tiburon", cantidad = 4, espacio = 60,movimiento='espiral'}}}
+    },
     }
     --[[llevar el control de patrones desbloquados y evitar repetir desbloqueos]]
     desbloqueosRealizados = {}
+
+    --[[power ups]]
+    powerUps = {}
+    tiempoPowerUp = 0
+    cooldownPowerUp = 18 
+
+-- Estados temporales del jugador
+player.powerUps = {
+    disparoRapido = false,
+    inmortal = false,
+    tiempoDisparoRapido = 0,
+    tiempoInmortal = 0
+}
 
     --[[ buzos: variales globales ]]
     buzos = {}
@@ -159,6 +246,13 @@ function game.load()
     MusicDisparoEnemy=love.audio.newSource("assets/sounds/disparo3","static")
     MusicDeadEnemy=love.audio.newSource("assets/sounds/deadenemy2","static")
     MusicDeadPlayer=love.audio.newSource("assets/sounds/explosionplayer","static")
+    MusicaDeFondo=love.audio.newSource("assets/sounds/A Night Of Dizzy Spells  NO COPYRIGHT 8-bit Music  Background.mp3", "stream")
+    MusicaDeBoss=love.audio.newSource("assets/sounds/Joshua McLean - Mountain Trials  NO COPYRIGHT 8-bit Music.mp3", "stream")
+    MusicaDeBoss:setLooping(true)
+    MusicaDeBoss:setVolume(0.3)
+    MusicaDeFondo:setLooping(true) -- [[Para que se repita]]
+    MusicaDeFondo:setVolume(0.3) -- [[para controlar el volumen]]
+    MusicaDeFondo:play()
 end
 
 --[[funcion para resetear cuando el jugador pierde una vida]]
@@ -201,13 +295,21 @@ function reset()
     disparoCooldown = 1
     tiempoDesdeUltimoDisparo = disparoCooldown
 
-        --[[reinicio de patrones al morir]]
-    patrones = {
-    {lado = "ambos", delay = true, orientacion = 'vertical', movimiento = "lineal", enemigos = {
-        {tipo = "submarino", cantidad = 2, espacio = 40},
-        {tipo = "tiburon", cantidad = 3, espacio = 40}
-    }}
-}
+    
+    disparoCooldown = 0.4
+    tiempoDesdeUltimoDisparo = disparoCooldown
+    oleadaJefeActiva = false
+    avisoOleadaJefe = false
+    nivelOleadaJefe = 0
+    puntosUltimaOleadaJefe = 0
+    puntosEntreOleadas = 1500             
+    duracionOleadaJefe = 500
+    ultimoPuntajePatron = 0
+    intervaloPuntajePatron = 300  
+    
+        MusicaDeBoss:stop()
+        MusicaDeFondo:play()
+    
     indicePatronActual = 1
     desbloqueosRealizados = {} -- reiniciar desbloqueos
 end
@@ -252,13 +354,6 @@ function reiniciarOleadaEnemigos()
     disparoCooldown = 1
     tiempoDesdeUltimoDisparo = disparoCooldown
 
-    --[[reinicio de patrones al morir]]
-    patrones = {
-        {lado = "ambos", delay = true, orientacion = 'vertical', movimiento = "lineal", enemigos = {
-            {tipo = "submarino", cantidad = 2, espacio = 40},
-            {tipo = "tiburon", cantidad = 3, espacio = 40}
-        }}
-    }
     indicePatronActual = 1
 
     oleada = oleada + 1
@@ -350,9 +445,15 @@ function SpawnTiburonesPatron(patron)
     -- Posición vertical inicial para que los enemigos queden centrados
     local yActual = (altoVentana / 2) - (totalAltura / 2)
         
-    for _, grupo in ipairs(patron.enemigos or {{tipo=patron.tipo, cantidad=patron.cantidad, espacio=patron.espacio}}) do
+    
+    local grupos = patron.enemigos or {{tipo=patron.tipo, cantidad=patron.cantidad, espacio=patron.espacio}}
+    for _, grupo in ipairs(grupos) do
         local cantidad = grupo.cantidad
         local espacio = grupo.espacio
+        local ladoGrupo = grupo.lado or patron.lado
+        local movimientoGrupo = grupo.movimiento or patron.movimiento or "lineal"
+        local direccionX = ladoGrupo == "izquierda" and 1 or -1
+        local xInicio = ladoGrupo == "izquierda" and -40 or love.graphics.getWidth() + 40
         -- [[Corrige el centrado para mixto]]
     if patron.orientacion == "mixto" then
         local totalDesplazamiento = (cantidad - 1) * espacio
@@ -385,49 +486,91 @@ function SpawnTiburonesPatron(patron)
             x = xInicio + i * espacio * direccionX
             y = yActual + i * espacio
         end
-            
-            --[[ condicional del delay donde se agrega a la lista 
+
+        --[[ condicional del delay donde se agrega a la lista 
         los enemigos pendiente y el tiempo de salida que va a 
         ver entre ellos,asi como su patron y tipo  ]]
 
             if patron.delay then
                 --[[ Guardamos para spawn futuro con delay]]
-                local delay = i * 1 -- [[1 segundos entre enemigos]]
-                table.insert(enemigosDelay, {
-                    x = x,
-                    y = y,
-                    lado = patron.lado,
-                    tipo = grupo.tipo,
-                    tiempoRestante = delay,
-                    orientacion = patron.orientacion,
-                    movimiento = patron.movimiento or "lineal",
-                    tiempo = 0,
-                    baseX = x,
-                    baseY = y,
-                    image=TiburonImage,
-                    anim= TiburonAnim:clone()
-                })
+                local delay = i * math.random(0.5, 1.5)-- [[Delay aleatorio entre 0.5 y 1.5 segundos por enemigo]]
+                local image, anim
+
+                if grupo.tipo == "submarino" then
+                    
+                    if oleadaJefeActiva then
+                        image = submarinoJefeImage
+                        anim = submarinoJefeAnim:clone()
+                        else
+                        image = submarinoImage
+                        anim = submarinoAnim:clone()
+                    end
+                
+                elseif grupo.tipo == "tiburon" then
+                    if oleadaJefeActiva then
+                image = TiburonJefeImage
+                anim = TiburonJefeAnim:clone()
+            else
+                image = TiburonImage
+                anim = TiburonAnim:clone()
+            end
+        end
+
+table.insert(enemigosDelay, {
+    x = x,
+    y = y,
+    lado = ladoGrupo,
+    tipo = grupo.tipo,
+    tiempoRestante = i,
+    orientacion = patron.orientacion,
+    movimiento = movimientoGrupo,
+    tiempo = 0,
+    baseX = x,
+    baseY = y,
+    image = image,
+    anim = anim
+})
             else
                 local enemigo = {}
                 --[[ control de direccion de los colliders de los enemigos ]]
                 enemigo.body = world:newRectangleCollider(x, y, 40, 20)
-                enemigo.speed = patron.lado == "izquierda" and 100 or -100
+                enemigo.speed = ladoGrupo == "izquierda" and 100 or -100
                 
                 --[[
         envio de direccion y tipo de enemigo de acuerdo al patron
         instancia de la colicion para los enemigos
-        ]]
-                enemigo.lado = patron.lado
+        ]]      
+        local image, anim
+
+if grupo.tipo == "submarino" then
+    if oleadaJefeActiva then
+        image = submarinoJefeImage
+        anim = submarinoJefeAnim:clone()
+    else
+        image = submarinoImage
+        anim = submarinoAnim:clone()
+    end
+elseif grupo.tipo == "tiburon" then
+    if oleadaJefeActiva then
+        image = TiburonJefeImage
+        anim = TiburonJefeAnim:clone()
+    else
+        image = TiburonImage
+        anim = TiburonAnim:clone()
+    end
+end 
+
+                enemigo.lado = ladoGrupo
                 enemigo.tipo = grupo.tipo
                 enemigo.body:setCollisionClass('Enemy')
                 enemigo.body:setType('kinematic')
-                enemigo.movimiento = patron.movimiento or "lineal"
+                enemigo.movimiento = movimientoGrupo
                 enemigo.tiempo = 0
                 enemigo.baseX = x
                 enemigo.baseY = y
-                enemigo.image =TiburonImage
-                enemigo.anim = TiburonAnim:clone()
-                
+                enemigo.image =image
+                enemigo.anim = anim
+
                 --[[ 
                 si el enemigo es un submarino, este debe disparar
                 aqui se inicializan las variables del tiempo para disparos
@@ -435,9 +578,11 @@ function SpawnTiburonesPatron(patron)
                 if enemigo.tipo == "submarino" then
                     enemigo.tiempoDesdeUltimoDisparo = 0
                     enemigo.tiempoEntreDisparos = 2
-                    enemigo.image = submarinoImage
-                    enemigo.anim = submarinoAnim:clone()
+                    enemigo.image =image
+                    enemigo.anim = anim
                 end
+                
+
                 --[[ se inserta en la lista]]
                 table.insert(tiburones, enemigo)
             end
@@ -520,13 +665,26 @@ end
 
 --[[ creacion de hitbox de disparo ]]
 function SpawnDisparo(x, y, direccion, clase)
+        local image, anim
+    if oleadaJefeActiva then
+        image = misilEnemigoJefes
+        anim = misilEneAnimJefes:clone()
+    else
+        image = misilEnemigo
+        anim =misilEneAnim:clone()
+    end
     local disparo = {}
+    disparo.direccion=direccion
     disparo.body = world:newRectangleCollider(x, y, 6, 3)
     disparo.body:setType('kinematic')
     disparo.body:setCollisionClass(clase)
     disparo.speed = direccion * 300 
+        disparo.image=image
+        disparo.anim=anim
 
     if clase == 'DisparoJugador' then
+        disparo.image=misilplayer
+        disparo.anim=misilAnimP:clone()
         table.insert(disparosJugador, disparo)
     else
         table.insert(disparos, disparo)
@@ -694,6 +852,126 @@ function matarJugador()
         MusicDeadPlayer:play()
     end
 end
+function movimientoAleatorio()
+    return movimientosDisponibles[math.random(#movimientosDisponibles)]
+end
+
+function activarOleadaJefe(nivel)
+    
+    --[[diferentes movimientos de los enemigos]]
+    local movimientosDisponibles = {
+    "lineal", "zigzag", "circular", "sinusoidal", "subida_caida", "espiral",
+    "osc_amplitud", "s_shape", "cuadrado", "flor", "reloj", "patrulla", 
+    "salto_tramos", "aleatorio"
+    }
+    local ladosDisponibles = {"izquierda", "derecha"}
+    local tiposDisponibles = {"submarino", "tiburon"}
+    
+
+    -- [[Cantidades ajustadas por nivel]]
+    local cantidadGrupos = love.math.random(1, 2) -- [[Número de grupos por oleada]]
+    local espacio = math.max(20, 50 - nivel * 5)  -- [[Espacio entre enemigos]]
+    local grupos = {}
+
+    for i = 1, cantidadGrupos do
+        local tipo = tiposDisponibles[love.math.random(#tiposDisponibles)]
+        local lado = ladosDisponibles[love.math.random(#ladosDisponibles)]
+        local movimiento = movimientosDisponibles[love.math.random(#movimientosDisponibles)]
+        local cantidad = love.math.random(1, 3 + nivel)
+
+        table.insert(grupos, {
+            tipo = tipo,
+            cantidad = cantidad,
+            espacio = espacio,
+            lado = lado,
+            movimiento = movimiento
+        })
+    end
+
+    local patron = {
+        delay = true,
+        orientacion = 'vertical',
+        enemigos =grupos
+    }
+
+    SpawnTiburonesPatron(patron)
+end
+
+function generarPatronAleatorio()
+    local lados = {"izquierda", "derecha",'IgualLados','ambos'}
+    local orientaciones = {"horizontal", "vertical"}
+    local movimientos= {
+    "lineal", "zigzag", "circular", "sinusoidal", "subida_caida", "espiral",
+    "osc_amplitud", "s_shape", "cuadrado", "flor", "reloj", "patrulla", 
+    "salto_tramos", "aleatorio"
+    }
+    local tipos = {"tiburon", "submarino"}
+
+    local lado = lados[math.random(#lados)]
+    local orientacion = orientaciones[math.random(#orientaciones)]
+    local movimiento = movimientos[math.random(#movimientos)]
+    local delay = math.random() < 0.7 -- 70% probabilidad de que tenga delay
+    local patron = {
+        lado = lado,
+        orientacion = orientacion,
+        delay = delay,
+        movimiento = movimiento,
+        enemigos = {
+            {
+                tipo = tipos[math.random(#tipos)],
+                cantidad = math.random(2, 5),
+                espacio = math.random(40, 80)
+            }
+        }
+    }
+
+    return patron
+end
+
+function spawnPowerUp()
+    local tipos = {"disparoRapido", "inmortal"}
+    local tipo = tipos[math.random(#tipos)]
+
+    local x = math.random(50, love.graphics.getWidth() - 50)
+    local y = math.random(80, love.graphics.getHeight() - 100)
+
+    local anim, image, ancho, alto
+
+    if tipo == "disparoRapido" then
+        anim = DisparoAnim:clone()
+        image = DispaPowerImage
+        ancho = image:getWidth()
+        alto = image:getHeight()
+    elseif tipo == "inmortal" then
+        anim = InmorAnim:clone()
+        image = InmorPowerImage
+        ancho = image:getWidth()
+        alto = image:getHeight()
+    end
+
+    anim.image = image
+
+    local radio = math.min(ancho, alto) * 0.3
+    local centerX = x + ancho  / 2
+    local centerY = y + alto -160 / 2 - alto * 0.1  -- Ajuste vertical hacia arriba
+
+    local powerUp = {
+        tipo = tipo,
+        x = x,
+        y = y,
+        anim = anim,
+        body =  world:newRectangleCollider(centerX - radio, centerY - radio, radio * 2, radio * 2),
+        tiempoVida = 10
+    }
+
+    powerUp.body:setCollisionClass('PowerUp')
+    powerUp.body:setType("static")
+    powerUp.body:setObject(powerUp)
+
+    table.insert(powerUps, powerUp)
+end
+
+
 
 function game.update(dt)
     world:update(dt)
@@ -705,6 +983,34 @@ function game.update(dt)
     if puntuacion == 50000 then
         MusicDeadEnemy=love.audio.newSource("assets/sounds/aester egg.mp3","static")
         end
+    --[[aviso de mensaje de oleda de jefes]]
+    if avisoOleadaJefe then
+    tiempoAvisoJefe = tiempoAvisoJefe - dt
+    if tiempoAvisoJefe <= 0 then
+        avisoOleadaJefe = false
+    end
+end
+--[[para activar la oleadas cada cierto cantidad de puntos]]
+if puntuacion >= puntosUltimaOleadaJefe + puntosEntreOleadas and not oleadaJefeActiva then
+        puntosUltimaOleadaJefe=puntuacion
+        --[[esto para las oleadas de jefe]]
+        oleadaJefeActiva = true
+        avisoOleadaJefe = true
+        tiempoEntrePatrones = 7
+        tiempoAvisoJefe = 3 
+        nivelOleadaJefe = nivelOleadaJefe + 1
+        puntosUltimaOleadaJefe = puntuacion
+        MusicaDeFondo:stop()
+        MusicaDeBoss:play()
+        activarOleadaJefe(nivelOleadaJefe)
+    end
+
+    -- [[Crear patrón nuevo de forma aleatoria cada 200 puntos]]
+if puntuacion >= ultimoPuntajePatron + intervaloPuntajePatron then
+    local nuevoPatron = generarPatronAleatorio()
+    table.insert(patrones, nuevoPatron)
+    ultimoPuntajePatron = ultimoPuntajePatron + intervaloPuntajePatron
+end
         --[[agregar nuevos patrones por puntos]]
         for puntaje, nuevosPatrones in pairs(desbloqueosPorPuntuacion) do 
         --[[si puntuacion es menor al puntaje y no ha sido desbloqueado
@@ -717,6 +1023,13 @@ function game.update(dt)
             desbloqueosRealizados[puntaje] = true
         end
     end
+        --[[para despues de la oleada de jefes]]
+    if oleadaJefeActiva and puntuacion >= puntosUltimaOleadaJefe + duracionOleadaJefe then
+    oleadaJefeActiva = false
+    tiempoEntrePatrones = 8 
+    MusicaDeBoss:stop()
+    MusicaDeFondo:play()
+end
 
     --[[manejo de aparicion de los enemigos pendientes]]
     for i = #enemigosDelay, 1, -1 do
@@ -733,7 +1046,7 @@ function game.update(dt)
             -- para que no todos nazcan pegados al borde
             x = e.x
             y = e.y
-        end
+end
 
             --[[creacion de estos enemigos]]
             enemigo.body = world:newRectangleCollider(x, y, 40, 20)
@@ -746,14 +1059,18 @@ function game.update(dt)
             enemigo.tiempo = 0
             enemigo.baseX = e.x
             enemigo.baseY = e.y
-            enemigo.image =TiburonImage
-            enemigo.anim = TiburonAnim:clone()
+            enemigo.image =e.image
+            enemigo.anim = e.anim
 
             if enemigo.tipo == "submarino" then
                 enemigo.tiempoDesdeUltimoDisparo = 0
-                enemigo.tiempoEntreDisparos = 2
-                enemigo.image = submarinoImage
-                enemigo.anim = submarinoAnim:clone()
+                if oleadaJefeActiva then
+                    enemigo.tiempoEntreDisparos = 0.7
+                else
+                    enemigo.tiempoEntreDisparos = 2
+                end
+                enemigo.image = e.image
+                enemigo.anim = e.anim
             end
             --[[se agrega a la lista de tiburones(la activa de los enemigos) y se remueve
             de los enemigos pendientes
@@ -770,13 +1087,71 @@ function game.update(dt)
         if player.tiempoMuerte >= player.tiempoReaparicion then
             -- [[Reaparecer jugador]]
             player.vivo = true
-            player.vidas = player.vidas - 1
             reset()
         end
 
         return -- [[Salir del update para evitar que el jugador haga otras acciones]]
     end
 
+    --[[power ups]]
+-- [[Spawn aleatorio de power-ups]]
+tiempoPowerUp = tiempoPowerUp + dt
+if tiempoPowerUp >= cooldownPowerUp then
+    spawnPowerUp()
+    tiempoPowerUp = 0
+end
+-- [[Revisión de colisiones con jugador]]
+if player.vivo and player.collider then
+    -- Buscar todos los power-ups que colisionan con el jugador
+    local colisionPowerUps = world:queryCircleArea(player.x, player.y, 21, {'PowerUp'})
+
+    for i = #powerUps, 1, -1 do
+        local p = powerUps[i]
+
+        local colisiono = false
+        for _, colision in ipairs(colisionPowerUps) do
+            if colision == p.body then
+                colisiono = true
+                break
+            end
+        end
+
+        if colisiono then
+            if p.tipo == "disparoRapido" then
+                player.powerUps.disparoRapido = true
+                player.powerUps.tiempoDisparoRapido = 6
+            elseif p.tipo == "inmortal" then
+                player.powerUps.inmortal = true
+                player.powerUps.tiempoInmortal = 5
+            end
+
+            p.body:destroy()
+            table.remove(powerUps, i)
+        else
+            -- Reducir tiempo de vida si no colisionó
+            p.tiempoVida = p.tiempoVida - dt
+            if p.tiempoVida <= 0 then
+                p.body:destroy()
+                table.remove(powerUps, i)
+            end
+        end
+    end
+end
+
+-- [[Temporizadores de efectos]]
+if player.powerUps.disparoRapido then
+    player.powerUps.tiempoDisparoRapido = player.powerUps.tiempoDisparoRapido - dt
+    if player.powerUps.tiempoDisparoRapido <= 0 then
+        player.powerUps.disparoRapido = false
+    end
+end
+
+if player.powerUps.inmortal then
+    player.powerUps.tiempoInmortal = player.powerUps.tiempoInmortal - dt
+    if player.powerUps.tiempoInmortal <= 0 then
+        player.powerUps.inmortal = false
+    end
+end
     --[[ variables para manejar el disparo del jugador ]]
     tiempoDesdeUltimoDisparo = tiempoDesdeUltimoDisparo + dt
     tiempoDesdeUltimoPatron = tiempoDesdeUltimoPatron + dt
@@ -793,7 +1168,7 @@ function game.update(dt)
     if tiempoDesdeUltimoPatron >= tiempoEntrePatrones then
         local patron = patrones[indicePatronActual]
     
-        if patron.lado == "ambos" then
+        if patron.lado == "IgualLados" then
         -- [[Crear dos clones del patrón, uno por cada lado y se le asigna ese lado]]
         local patronIzq = cloneP(patron)
         patronIzq.lado = "izquierda"
@@ -842,6 +1217,25 @@ function game.update(dt)
         end
     end
 
+        -- [[actualizar animaciones de los disparos del jugador]]
+for i, d in ipairs(disparosJugador) do
+    if d.anim then
+        d.anim:update(dt)
+    end
+end
+
+-- [[actualizar animaciones de los disparos enemigos]]
+for i, d in ipairs(disparos) do
+    if d.anim then
+        d.anim:update(dt)
+    end
+end
+-- [[actualizar animaciones de los power ups]]
+for i, p in ipairs(powerUps) do
+    if p.anim then
+        p.anim:update(dt)
+    end
+end
     --[[ dibujo de los buzos ]]
     for i = #buzos, 1, -1 do
         local buzo = buzos[i]
@@ -921,6 +1315,7 @@ function game.update(dt)
         end
 
         matarJugador()
+                player.vidas = player.vidas - 1
         if player.vidas <= 0 then
             love.event.quit()
         end
@@ -942,6 +1337,7 @@ function game.update(dt)
         end
 
         matarJugador()
+                player.vidas = player.vidas - 1
         if player.vidas <= 0 then
             love.event.quit()
         end
@@ -1124,15 +1520,31 @@ function game.draw()
     end
 
     --[[ dibujo de disparos ]]
-    love.graphics.setColor(1, 1, 0)
+    love.graphics.setColor(1, 1, 1)
     for _, d in ipairs(disparos) do
         local x, y = d.body:getPosition()
-        love.graphics.rectangle('fill', x - 5, y - 2, 10, 5)
+        d.anim:draw(d.image,x,y,0,-d.direccion,1,24,24)
     end
     for _, d in ipairs(disparosJugador) do
         local x, y = d.body:getPosition()
-        love.graphics.rectangle('fill', x - 3, y - 1.5, 6, 3)
+        d.anim:draw(d.image,x,y,0,-d.direccion,1,24,24)
     end
+
+    
+--[[dibujo de power ups]]
+for i, p in ipairs(powerUps) do
+    if p.anim then
+        p.anim:draw(p.anim.image, p.x, p.y)
+    end
+end
+
+--[[mensaje de oleada de patrones de jefes]]
+    if avisoOleadaJefe then
+    love.graphics.setFont(pixelFont)
+    love.graphics.setColor(1, 0, 0)
+    love.graphics.printf("¡ALERTA: OLEADA DE JEFE INMINENTE!", 0, love.graphics.getHeight()/2 - 20, love.graphics.getWidth(), "center")
+    love.graphics.setColor(1,1,1)
+end
 
     --[[ dibujo de marcador de puntos ]]
     love.graphics.setFont(pixelFont)
