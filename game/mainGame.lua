@@ -14,7 +14,6 @@ function game.load()
     pixelFont = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf", 16)
 
     --[[ mapa ]]
-    
     gameMap = sti('assets/sprites/map/background.lua')
 
     oleada = 1
@@ -32,8 +31,10 @@ function game.load()
     tiempoEntrePatrones = 9
     tiempoDesdeUltimoPatron = 0
 
+    --[[ variables de disparos ]]
     disparoCooldown = 0.4
     tiempoDesdeUltimoDisparo = disparoCooldown
+
     --[[variables de oledas de jefes]]
     oleadaJefeActiva = false
     avisoOleadaJefe = false
@@ -46,16 +47,13 @@ function game.load()
     ultimoPuntajePatron = 0
     intervaloPuntajePatron = 600
 
-
-
-
     --[[ instancia de clases para hitbox de enemigos ]]
     world:addCollisionClass('Enemy')
     -- clase buzo
     world:addCollisionClass('buzo')
     world:addCollisionClass('DisparoJugador')
     world:addCollisionClass('DisparoEnemy')
-        world:addCollisionClass('PowerUp')
+    world:addCollisionClass('PowerUp')
     world:addCollisionClass('Player')
     --[[ validacion: que las balas del enemigo no choquen con las del jugador y viceversa ]]
     world:collisionClassesSet('DisparoJugador', {ignores = {'DisparoJugador', 'DisparoEnemy'}})
@@ -77,6 +75,7 @@ function game.load()
     player.tiempoMuerte = 0
     player.tiempoReaparicion = 1.1
     
+    --[[ SPRITES ]]
     --[[sprite del jugador]]
     player.image = love.graphics.newImage("assets/sprites/player/jugador (1).png")
     local g = anim8.newGrid(64, 64, player.image:getWidth(), player.image:getHeight())
@@ -90,7 +89,7 @@ function game.load()
     local Gdead=anim8.newGrid(64, 64,player.imageDead:getWidth(), player.imageDead:getHeight())
     player.animDead = anim8.newAnimation(Gdead(1, '1-12'), 0.1)
 
-        --[[sprite misil del jugador]]
+    --[[sprite misil del jugador]]
     misilplayer=love.graphics.newImage("assets/sprites/player/misilPlayer.png")
     local Gmisil=anim8.newGrid(48, 48,misilplayer:getWidth(), misilplayer:getHeight())
     misilAnimP=anim8.newAnimation(Gmisil(1, '1-2'), 0.1)
@@ -100,7 +99,7 @@ function game.load()
     submarinoGrid = anim8.newGrid(64, 64, submarinoImage:getWidth(), submarinoImage:getHeight())
     submarinoAnim = anim8.newAnimation(submarinoGrid(1,'1-5'), 0.1)
 
-        --[[sprites del misil enemigo]]
+    --[[sprites del misil enemigo]]
     misilEnemigo=love.graphics.newImage("assets/sprites/enemy/misilEnemy.png")
     misilEneGrid=anim8.newGrid(48, 48, misilEnemigo:getWidth(), misilEnemigo:getHeight())
     misilEneAnim=anim8.newAnimation(misilEneGrid(1,'1-2'), 0.1)
@@ -110,8 +109,7 @@ function game.load()
     TiburonGrid = anim8.newGrid(64, 64, TiburonImage:getWidth(), TiburonImage:getHeight())
     TiburonAnim = anim8.newAnimation(TiburonGrid(1,'1-5'), 0.1)
     
---[[SPRITES DE JEFES]]
-    
+    --[[SPRITES DE JEFES]]
     --[[submarino enemigo jefes]]
     submarinoJefeImage=love.graphics.newImage("assets/sprites/Boss/submarinoEnemigoBoss.png")
     submarinoJefeGrid=anim8.newGrid(64, 64, submarinoJefeImage:getWidth(), submarinoJefeImage:getHeight())
@@ -139,7 +137,7 @@ function game.load()
     DispaPowerGrid=anim8.newGrid(64, 64,DispaPowerImage:getWidth(), DispaPowerImage:getHeight())
     DisparoAnim=anim8.newAnimation(DispaPowerGrid(1,'1-2'), 0.1)
     
-    --[[importal]]
+    --[[inmortal]]
     InmorPowerImage=love.graphics.newImage("assets/sprites/power Ups/inmortal.png")
     InmorPowerGrid=anim8.newGrid(64, 64,InmorPowerImage:getWidth(),InmorPowerImage:getHeight())
     InmorAnim=anim8.newAnimation(InmorPowerGrid(1,'1-2'), 0.1)
@@ -187,7 +185,7 @@ function game.load()
     
     }
     indicePatronActual = 1
-        desbloqueosRealizados = {} 
+    desbloqueosRealizados = {} 
     --[[
     añadir patrones amedida que va aumentando de puntos
     ]]
@@ -198,34 +196,35 @@ function game.load()
     [800] = {
         {lado = "ambos", orientacion = "vertical",enemigos={{lado="derecha",tipo = "tiburon", cantidad = 3, espacio = 40,movimiento='zigzag'},{lado="izquierda",tipo = "tiburon", cantidad = 4, espacio = 50,movimiento='espiral'}}}
     },
-        [1000] = {
+    [1000] = {
         {lado = "ambos", orientacion = "vertical",delay=true,enemigos={{lado="derecha",tipo = "submarino", cantidad = 2, espacio = 40,movimiento='lineal'},{lado="izquierda",tipo = "submarino", cantidad = 4, espacio = 60,movimiento='lineal'}}}
     },
-        [1500] = {
+    [1500] = {
         {lado = "ambos", orientacion = "vertical",enemigos={{lado="derecha",tipo = "submarino", cantidad = 2, espacio = 40,movimiento='s_shape'},{lado="izquierda",tipo = "tiburon", cantidad = 2, espacio = 40,movimiento='sinusoidal'}}}
     },
-        [1700] = {
+    [1700] = {
         {lado = "ambos", orientacion = "vertical",enemigos={{lado="derecha",tipo = "submarino", cantidad = 2, espacio = 50,movimiento='lineal'},{lado="izquierda",tipo = "tiburon", cantidad = 3, espacio = 60,movimiento='s_shape'}}}
     },
-        [2000] = {
+    [2000] = {
         {lado = "ambos", orientacion = "vertical",enemigos={{lado="derecha",tipo = "submarino", cantidad = 2, espacio = 60,movimiento='s_shape'},{lado="izquierda",tipo = "tiburon", cantidad = 4, espacio = 60,movimiento='espiral'}}}
     },
     }
+
     --[[llevar el control de patrones desbloquados y evitar repetir desbloqueos]]
     desbloqueosRealizados = {}
 
-    --[[power ups]]
+    --[[POWER UPS]]
     powerUps = {}
     tiempoPowerUp = 0
     cooldownPowerUp = 18 
 
--- Estados temporales del jugador
-player.powerUps = {
-    disparoRapido = false,
-    inmortal = false,
-    tiempoDisparoRapido = 0,
-    tiempoInmortal = 0
-}
+    -- Estados temporales del jugador
+    player.powerUps = {
+        disparoRapido = false,
+        inmortal = false,
+        tiempoDisparoRapido = 0,
+        tiempoInmortal = 0
+    }
 
     --[[ buzos: variales globales ]]
     buzos = {}
@@ -307,8 +306,8 @@ function reset()
     ultimoPuntajePatron = 0
     intervaloPuntajePatron = 300  
     
-        MusicaDeBoss:stop()
-        MusicaDeFondo:play()
+    MusicaDeBoss:stop()
+    MusicaDeFondo:play()
     
     indicePatronActual = 1
     desbloqueosRealizados = {} -- reiniciar desbloqueos
@@ -322,7 +321,7 @@ function reiniciarOleadaEnemigos()
         table.remove(tiburones, i)
     end
 
-    --[[ buzos ]]
+    --[[ Borrar buzos ]]
     for i = #buzos, 1, -1 do
         buzos[i].body:destroy()
         table.remove(buzos, i)
@@ -334,7 +333,7 @@ function reiniciarOleadaEnemigos()
         table.remove(disparos, i)
     end
 
-    -- [[Resetear puntuación]]
+    -- [[Mantener puntuación]]
     puntuacion = puntuacion
 
     -- [[Resetear jugador al centro arriba]]
@@ -378,36 +377,38 @@ function spawnBuzos(x, y)
     buzo.body:setCollisionClass("buzo")
     buzo.body:setObject(buzo)
 
-    buzo.body:setPreSolve(function(collider_1, collider_2, contact)
-        local buzoCollider = nil
-        local otherCollider = nil
+    buzo.body:setPreSolve(
+        function(collider_1, collider_2, contact)
+            local buzoCollider = nil
+            local otherCollider = nil
 
-        if collider_1.collision_class == "buzo" then
-            buzoCollider = collider_1
-            otherCollider = collider_2
-        elseif collider_2.collision_class == "buzo" then
-            buzoCollider = collider_2
-            otherCollider = collider_1
-        end
+            if collider_1.collision_class == "buzo" then
+                buzoCollider = collider_1
+                otherCollider = collider_2
+            elseif collider_2.collision_class == "buzo" then
+                buzoCollider = collider_2
+                otherCollider = collider_1
+            end
 
-        if buzoCollider and otherCollider and otherCollider.collision_class == "Enemy" then
-            contact:setEnabled(false)
+            if buzoCollider and otherCollider and otherCollider.collision_class == "Enemy" then
+                contact:setEnabled(false)
 
-            -- Destruir el buzo si toca a un enemigo
-            local buzoObj = buzoCollider:getObject()
-            if buzoObj and buzoObj.body and not buzoObj.body:isDestroyed() then
-                buzoObj.body:destroy()
+                -- Destruir el buzo si toca a un enemigo
+                local buzoObj = buzoCollider:getObject()
+                if buzoObj and buzoObj.body and not buzoObj.body:isDestroyed() then
+                    buzoObj.body:destroy()
 
-                -- Remover de la lista de buzos
-                for i = #buzos, 1, -1 do
-                    if buzos[i] == buzoObj then
-                        table.remove(buzos, i)
-                        break
+                    -- Remover de la lista de buzos
+                    for i = #buzos, 1, -1 do
+                        if buzos[i] == buzoObj then
+                            table.remove(buzos, i)
+                            break
+                        end
                     end
                 end
             end
         end
-    end)
+    )
 
     table.insert(buzos, buzo)
 end
@@ -422,7 +423,7 @@ end
 
 --[[ manejo de aparicion de enemigos ]]
 function SpawnTiburonesPatron(patron)
-        --[[ 
+    --[[ 
     variables para obtener las dimensiones de la ventana
         su funcion aqui es delimitar hasta donde pueden aparecer los enemigos en lo alto y ancho de la misma
     ]]
@@ -679,8 +680,8 @@ function SpawnDisparo(x, y, direccion, clase)
     disparo.body:setType('kinematic')
     disparo.body:setCollisionClass(clase)
     disparo.speed = direccion * 300 
-        disparo.image=image
-        disparo.anim=anim
+    disparo.image = image
+    disparo.anim = anim
 
     if clase == 'DisparoJugador' then
         disparo.image=misilplayer
@@ -712,82 +713,71 @@ function actualizarMovimientoEnemigo(enemy, dt)
     --[[La posición final se calcula con coordenadas polares para que describa un círculo de 
     radio 60(coseno para x, seno para y), multiplicando la dirección horizontal por dir.]]
     elseif enemy.movimiento == "circular" then
-    enemy.baseX = enemy.baseX + speed * dt
-    x = enemy.baseX + math.cos(t * 2) * 60 * dir
-    y = enemy.baseY + math.sin(t * 2) * 60
-
+        enemy.baseX = enemy.baseX + speed * dt
+        x = enemy.baseX + math.cos(t * 2) * 60 * dir
+        y = enemy.baseY + math.sin(t * 2) * 60
     elseif enemy.movimiento == "sinusoidal" then
         x = x + speed * dt
         y = enemy.baseY + math.sin(x / 50) * 30
-    
-
     --[[Movimiento vertical que alterna entre dos posiciones (+60 o -60 píxeles respecto a la base)
     con un cambio determinado por el seno
     ]]
     elseif enemy.movimiento == "subida_caida" then
-    x = x + speed * dt
-    y = enemy.baseY + (math.abs(math.sin(t * 3)) > 0.5 and -60 or 60)
-    
+        x = x + speed * dt
+        y = enemy.baseY + (math.abs(math.sin(t * 3)) > 0.5 and -60 or 60)
     --[[La posición va describiendo una espiral que se aleja del centro.]]
     elseif enemy.movimiento == "espiral" then
-    enemy.baseX = enemy.baseX + speed * dt
-    local radio = 10 + t * 5  -- [[Radio crece con el tiempo para espiral abierta]]
-    x = enemy.baseX + math.cos(t * 4) * radio * dir
-    y = enemy.baseY + math.sin(t * 4) * radio
-    
+        enemy.baseX = enemy.baseX + speed * dt
+        local radio = 10 + t * 5  -- [[Radio crece con el tiempo para espiral abierta]]
+        x = enemy.baseX + math.cos(t * 4) * radio * dir
+        y = enemy.baseY + math.sin(t * 4) * radio
     --[[Movimiento vertical con seno cuyo valor máximo (amplitud) varía entre 0 y 40 según otra función seno]]
     elseif enemy.movimiento == "osc_amplitud" then
-    x = x + speed * dt
-    local amp = 20 + 20 * math.sin(t)  -- amplitud varía entre 0 y 40
-    y = enemy.baseY + math.sin(t * 5) * amp
-
+        x = x + speed * dt
+        local amp = 20 + 20 * math.sin(t)  -- amplitud varía entre 0 y 40
+        y = enemy.baseY + math.sin(t * 5) * amp
     --[[Movimiento vertical oscilatorio complejo que combina tiempo y 
     posición horizontal para crear una forma tipo "S", utilizando
     nuevamente la funcion seno
     ]]
     elseif enemy.movimiento == "s_shape" then
-    x = x + speed * dt
-    y = enemy.baseY + math.sin(t * 10 + x / 30) * 40
-    
-
+        x = x + speed * dt
+        y = enemy.baseY + math.sin(t * 10 + x / 30) * 40
     --[[Se divide el movimiento en 4 fases que corresponden a los 4 lados del cuadrado.
     En cada fase se mueve una coordenada manteniendo fija la otra.]]
     elseif enemy.movimiento == "cuadrado" then
-    local lado = 100  -- [[tamaño del lado del cuadrado]]
-    local fase = math.floor(t % 4)
-    local progreso = (t % 1) * lado
-    enemy.baseX = enemy.baseX + speed * dt
-    if fase == 0 then
-        x = enemy.baseX + progreso * dir
-        y = enemy.baseY
-    elseif fase == 1 then
-        x = enemy.baseX + lado * dir
-        y = enemy.baseY + progreso
-    elseif fase == 2 then
-        x = enemy.baseX + (lado - progreso) * dir
-        y = enemy.baseY + lado
-    else
-        x = enemy.baseX
-        y = enemy.baseY + (lado - progreso)
-    end
-
+        local lado = 100  -- [[tamaño del lado del cuadrado]]
+        local fase = math.floor(t % 4)
+        local progreso = (t % 1) * lado
+        enemy.baseX = enemy.baseX + speed * dt
+        if fase == 0 then
+            x = enemy.baseX + progreso * dir
+            y = enemy.baseY
+        elseif fase == 1 then
+            x = enemy.baseX + lado * dir
+            y = enemy.baseY + progreso
+        elseif fase == 2 then
+            x = enemy.baseX + (lado - progreso) * dir
+            y = enemy.baseY + lado
+        else
+            x = enemy.baseX
+            y = enemy.baseY + (lado - progreso)
+        end
     --[[Movimiento circular que cambia su radio periódicamente, generando una forma de flor, este cambio lo genera
     las funciones seno y coseno
     ]]
     elseif enemy.movimiento == "flor" then
-
-    local r = 50 + 30 * math.sin(6 * t)  --[[ 6 pétalos]]
-    enemy.baseX = enemy.baseX + speed * dt
-    x = enemy.baseX + r * math.cos(t * 2) * dir
-    y = enemy.baseY + r * math.sin(t * 2)
-    
-    elseif enemy.movimiento == "reloj" then
-    local radio = 50
-    local pasos = math.floor(t * 1.5) % 12  -- [[12 posiciones]]
-    local angulo = pasos * (math.pi * 2 / 12)
+        local r = 50 + 30 * math.sin(6 * t)  --[[ 6 pétalos]]
         enemy.baseX = enemy.baseX + speed * dt
-    x = enemy.baseX + math.cos(angulo) * radio * dir
-    y = enemy.baseY + math.sin(angulo) * radio
+        x = enemy.baseX + r * math.cos(t * 2) * dir
+        y = enemy.baseY + r * math.sin(t * 2)
+    elseif enemy.movimiento == "reloj" then
+        local radio = 50
+        local pasos = math.floor(t * 1.5) % 12  -- [[12 posiciones]]
+        local angulo = pasos * (math.pi * 2 / 12)
+        enemy.baseX = enemy.baseX + speed * dt
+        x = enemy.baseX + math.cos(angulo) * radio * dir
+        y = enemy.baseY + math.sin(angulo) * radio
     
     --[[
     El enemigo se mueve entre dos puntos definidos con interpolación lineal.
@@ -795,39 +785,37 @@ function actualizarMovimientoEnemigo(enemy, dt)
     Cambia entre los dos puntos alternadamente.
     ]]
     elseif enemy.movimiento == "patrulla" then
-    enemy.baseX = enemy.baseX + speed * dt
-    local puntos = {{x = enemy.baseX, y = enemy.baseY}, {x = enemy.baseX + 200 * dir, y = enemy.baseY + 100}}
-    local duracion = 2
-    local indice = math.floor(t / duracion) % 2 + 1
-    local sig = (indice % 2) + 1
-    local progreso = (t % duracion) / duracion
-    x = puntos[indice].x + (puntos[sig].x - puntos[indice].x) * progreso
-    y = puntos[indice].y + (puntos[sig].y - puntos[indice].y) * progreso
-
+        enemy.baseX = enemy.baseX + speed * dt
+        local puntos = {{x = enemy.baseX, y = enemy.baseY}, {x = enemy.baseX + 200 * dir, y = enemy.baseY + 100}}
+        local duracion = 2
+        local indice = math.floor(t / duracion) % 2 + 1
+        local sig = (indice % 2) + 1
+        local progreso = (t % duracion) / duracion
+        x = puntos[indice].x + (puntos[sig].x - puntos[indice].x) * progreso
+        y = puntos[indice].y + (puntos[sig].y - puntos[indice].y) * progreso
     --[[Salto vertical entre dos posiciones alternadas cada 0.5 segundos.]]
     elseif enemy.movimiento == "salto_tramos" then
-    x = x + speed * dt
-    y = enemy.baseY + ((math.floor(t * 2) % 2 == 0) and -50 or 50)
-
+        x = x + speed * dt
+        y = enemy.baseY + ((math.floor(t * 2) % 2 == 0) and -50 or 50)
     --[[Su velocidad vertical vy es aleatoria y se mantiene,este
     Rebota en los límites superior e inferior de los limites establecidos.]]
     elseif enemy.movimiento == "aleatorio" then
-    x = x + speed * dt
+        x = x + speed * dt
 
-    if not enemy.vy then
-        enemy.vy = (math.random() * 2 - 1) * 50 
-    end
-    y = y + enemy.vy * dt
-    -- [[Limitar el movimiento vertical dentro del limite establecido]]
-    local limiteSuperior = 120
-    local limiteInferior = love.graphics.getHeight() - 120
-    if y < limiteSuperior then
-        y = limiteSuperior
-        enemy.vy = -enemy.vy -- [[rebota invertido la velocidad vertical]]
-    elseif y > limiteInferior then
-        y = limiteInferior
-        enemy.vy = -enemy.vy
-    end
+        if not enemy.vy then
+            enemy.vy = (math.random() * 2 - 1) * 50 
+        end
+        y = y + enemy.vy * dt
+        -- [[Limitar el movimiento vertical dentro del limite establecido]]
+        local limiteSuperior = 120
+        local limiteInferior = love.graphics.getHeight() - 120
+        if y < limiteSuperior then
+            y = limiteSuperior
+            enemy.vy = -enemy.vy -- [[rebota invertido la velocidad vertical]]
+        elseif y > limiteInferior then
+            y = limiteInferior
+            enemy.vy = -enemy.vy
+        end
     end
 
     enemy.body:setPosition(x, y)
@@ -860,9 +848,9 @@ function activarOleadaJefe(nivel)
     
     --[[diferentes movimientos de los enemigos]]
     local movimientosDisponibles = {
-    "lineal", "zigzag", "circular", "sinusoidal", "subida_caida", "espiral",
-    "osc_amplitud", "s_shape", "cuadrado", "flor", "reloj", "patrulla", 
-    "salto_tramos", "aleatorio"
+        "lineal", "zigzag", "circular", "sinusoidal", "subida_caida", "espiral",
+        "osc_amplitud", "s_shape", "cuadrado", "flor", "reloj", "patrulla", 
+        "salto_tramos", "aleatorio"
     }
     local ladosDisponibles = {"izquierda", "derecha"}
     local tiposDisponibles = {"submarino", "tiburon"}
@@ -901,9 +889,9 @@ function generarPatronAleatorio()
     local lados = {"izquierda", "derecha",'IgualLados','ambos'}
     local orientaciones = {"horizontal", "vertical"}
     local movimientos= {
-    "lineal", "zigzag", "circular", "sinusoidal", "subida_caida", "espiral",
-    "osc_amplitud", "s_shape", "cuadrado", "flor", "reloj", "patrulla", 
-    "salto_tramos", "aleatorio"
+        "lineal", "zigzag", "circular", "sinusoidal", "subida_caida", "espiral",
+        "osc_amplitud", "s_shape", "cuadrado", "flor", "reloj", "patrulla", 
+        "salto_tramos", "aleatorio"
     }
     local tipos = {"tiburon", "submarino"}
 
@@ -971,8 +959,6 @@ function spawnPowerUp()
     table.insert(powerUps, powerUp)
 end
 
-
-
 function game.update(dt)
     world:update(dt)
 
@@ -982,17 +968,18 @@ function game.update(dt)
     --[[easter egg]]
     if puntuacion == 50000 then
         MusicDeadEnemy=love.audio.newSource("assets/sounds/aester egg.mp3","static")
-        end
+    end
     --[[aviso de mensaje de oleda de jefes]]
     if avisoOleadaJefe then
-    tiempoAvisoJefe = tiempoAvisoJefe - dt
-    if tiempoAvisoJefe <= 0 then
-        avisoOleadaJefe = false
+        tiempoAvisoJefe = tiempoAvisoJefe - dt
+        if tiempoAvisoJefe <= 0 then
+            avisoOleadaJefe = false
+        end
     end
-end
---[[para activar la oleadas cada cierto cantidad de puntos]]
-if puntuacion >= puntosUltimaOleadaJefe + puntosEntreOleadas and not oleadaJefeActiva then
-        puntosUltimaOleadaJefe=puntuacion
+
+    --[[para activar la oleadas cada cierto cantidad de puntos]]
+    if puntuacion >= puntosUltimaOleadaJefe + puntosEntreOleadas and not oleadaJefeActiva then
+        puntosUltimaOleadaJefe = puntuacion
         --[[esto para las oleadas de jefe]]
         oleadaJefeActiva = true
         avisoOleadaJefe = true
@@ -1006,13 +993,14 @@ if puntuacion >= puntosUltimaOleadaJefe + puntosEntreOleadas and not oleadaJefeA
     end
 
     -- [[Crear patrón nuevo de forma aleatoria cada 200 puntos]]
-if puntuacion >= ultimoPuntajePatron + intervaloPuntajePatron then
-    local nuevoPatron = generarPatronAleatorio()
-    table.insert(patrones, nuevoPatron)
-    ultimoPuntajePatron = ultimoPuntajePatron + intervaloPuntajePatron
-end
-        --[[agregar nuevos patrones por puntos]]
-        for puntaje, nuevosPatrones in pairs(desbloqueosPorPuntuacion) do 
+    if puntuacion >= ultimoPuntajePatron + intervaloPuntajePatron then
+        local nuevoPatron = generarPatronAleatorio()
+        table.insert(patrones, nuevoPatron)
+        ultimoPuntajePatron = ultimoPuntajePatron + intervaloPuntajePatron
+    end
+
+    --[[agregar nuevos patrones por puntos]]
+    for puntaje, nuevosPatrones in pairs(desbloqueosPorPuntuacion) do 
         --[[si puntuacion es menor al puntaje y no ha sido desbloqueado
         entonces inserta el nuevo patron a la lista de patrones
         ]]
@@ -1023,13 +1011,14 @@ end
             desbloqueosRealizados[puntaje] = true
         end
     end
-        --[[para despues de la oleada de jefes]]
+
+    --[[para despues de la oleada de jefes]]
     if oleadaJefeActiva and puntuacion >= puntosUltimaOleadaJefe + duracionOleadaJefe then
-    oleadaJefeActiva = false
-    tiempoEntrePatrones = 8 
-    MusicaDeBoss:stop()
-    MusicaDeFondo:play()
-end
+        oleadaJefeActiva = false
+        tiempoEntrePatrones = 8 
+        MusicaDeBoss:stop()
+        MusicaDeFondo:play()
+    end
 
     --[[manejo de aparicion de los enemigos pendientes]]
     for i = #enemigosDelay, 1, -1 do
@@ -1039,14 +1028,14 @@ end
             local enemigo = {}
             local x, y
             if e.orientacion == "horizontal" or e.orientacion == "mixto" then
-            x = e.x
-            y = e.y
+                x = e.x
+                y = e.y
             else
-            -- En vertical o zigzag, conserva la posición original guardada (e.x)
-            -- para que no todos nazcan pegados al borde
-            x = e.x
-            y = e.y
-end
+                -- En vertical o zigzag, conserva la posición original guardada (e.x)
+                -- para que no todos nazcan pegados al borde
+                x = e.x
+                y = e.y
+            end
 
             --[[creacion de estos enemigos]]
             enemigo.body = world:newRectangleCollider(x, y, 40, 20)
@@ -1080,7 +1069,7 @@ end
         end
     end
 
-        if not player.vivo then
+    if not player.vivo then
         player.animDead:update(dt)
         player.tiempoMuerte = player.tiempoMuerte + dt
 
@@ -1094,64 +1083,65 @@ end
     end
 
     --[[power ups]]
--- [[Spawn aleatorio de power-ups]]
-tiempoPowerUp = tiempoPowerUp + dt
-if tiempoPowerUp >= cooldownPowerUp then
-    spawnPowerUp()
-    tiempoPowerUp = 0
-end
--- [[Revisión de colisiones con jugador]]
-if player.vivo and player.collider then
-    -- Buscar todos los power-ups que colisionan con el jugador
-    local colisionPowerUps = world:queryCircleArea(player.x, player.y, 21, {'PowerUp'})
+    -- [[Spawn aleatorio de power-ups]]
+    tiempoPowerUp = tiempoPowerUp + dt
+    if tiempoPowerUp >= cooldownPowerUp then
+        spawnPowerUp()
+        tiempoPowerUp = 0
+    end
 
-    for i = #powerUps, 1, -1 do
-        local p = powerUps[i]
+    -- [[Revisión de colisiones con jugador]]
+    if player.vivo and player.collider then
+        -- Buscar todos los power-ups que colisionan con el jugador
+        local colisionPowerUps = world:queryCircleArea(player.x, player.y, 21, {'PowerUp'})
 
-        local colisiono = false
-        for _, colision in ipairs(colisionPowerUps) do
-            if colision == p.body then
-                colisiono = true
-                break
-            end
-        end
+        for i = #powerUps, 1, -1 do
+            local p = powerUps[i]
 
-        if colisiono then
-            if p.tipo == "disparoRapido" then
-                player.powerUps.disparoRapido = true
-                player.powerUps.tiempoDisparoRapido = 6
-            elseif p.tipo == "inmortal" then
-                player.powerUps.inmortal = true
-                player.powerUps.tiempoInmortal = 5
+            local colisiono = false
+            for _, colision in ipairs(colisionPowerUps) do
+                if colision == p.body then
+                    colisiono = true
+                    break
+                end
             end
 
-            p.body:destroy()
-            table.remove(powerUps, i)
-        else
-            -- Reducir tiempo de vida si no colisionó
-            p.tiempoVida = p.tiempoVida - dt
-            if p.tiempoVida <= 0 then
+            if colisiono then
+                if p.tipo == "disparoRapido" then
+                    player.powerUps.disparoRapido = true
+                    player.powerUps.tiempoDisparoRapido = 6
+                elseif p.tipo == "inmortal" then
+                    player.powerUps.inmortal = true
+                    player.powerUps.tiempoInmortal = 5
+                end
+
                 p.body:destroy()
                 table.remove(powerUps, i)
+            else
+                -- Reducir tiempo de vida si no colisionó
+                p.tiempoVida = p.tiempoVida - dt
+                if p.tiempoVida <= 0 then
+                    p.body:destroy()
+                    table.remove(powerUps, i)
+                end
             end
         end
     end
-end
 
--- [[Temporizadores de efectos]]
-if player.powerUps.disparoRapido then
-    player.powerUps.tiempoDisparoRapido = player.powerUps.tiempoDisparoRapido - dt
-    if player.powerUps.tiempoDisparoRapido <= 0 then
-        player.powerUps.disparoRapido = false
+    -- [[Temporizadores de efectos]]
+    if player.powerUps.disparoRapido then
+        player.powerUps.tiempoDisparoRapido = player.powerUps.tiempoDisparoRapido - dt
+        if player.powerUps.tiempoDisparoRapido <= 0 then
+            player.powerUps.disparoRapido = false
+        end
     end
-end
 
-if player.powerUps.inmortal then
-    player.powerUps.tiempoInmortal = player.powerUps.tiempoInmortal - dt
-    if player.powerUps.tiempoInmortal <= 0 then
-        player.powerUps.inmortal = false
+    if player.powerUps.inmortal then
+        player.powerUps.tiempoInmortal = player.powerUps.tiempoInmortal - dt
+        if player.powerUps.tiempoInmortal <= 0 then
+            player.powerUps.inmortal = false
+        end
     end
-end
     --[[ variables para manejar el disparo del jugador ]]
     tiempoDesdeUltimoDisparo = tiempoDesdeUltimoDisparo + dt
     tiempoDesdeUltimoPatron = tiempoDesdeUltimoPatron + dt
@@ -1169,18 +1159,18 @@ end
         local patron = patrones[indicePatronActual]
     
         if patron.lado == "IgualLados" then
-        -- [[Crear dos clones del patrón, uno por cada lado y se le asigna ese lado]]
-        local patronIzq = cloneP(patron)
-        patronIzq.lado = "izquierda"
-        local patronDer = cloneP(patron)
-        patronDer.lado = "derecha"
-        --[[se invoca al Spawn de los enemigos 2 para los dos lados]]
-        SpawnTiburonesPatron(patronIzq)
-        SpawnTiburonesPatron(patronDer)
-    else
-        SpawnTiburonesPatron(patron)--[[en caso de que sea solamente izquierdo o derecho]]
-        SpawnBuzosPatron(patron)
-    end
+            -- [[Crear dos clones del patrón, uno por cada lado y se le asigna ese lado]]
+            local patronIzq = cloneP(patron)
+            patronIzq.lado = "izquierda"
+            local patronDer = cloneP(patron)
+            patronDer.lado = "derecha"
+            --[[se invoca al Spawn de los enemigos 2 para los dos lados]]
+            SpawnTiburonesPatron(patronIzq)
+            SpawnTiburonesPatron(patronDer)
+        else
+            SpawnTiburonesPatron(patron)--[[en caso de que sea solamente izquierdo o derecho]]
+            SpawnBuzosPatron(patron)
+        end
 
         indicePatronActual = indicePatronActual % #patrones + 1
         tiempoDesdeUltimoPatron = 0
@@ -1192,7 +1182,7 @@ end
         actualizarMovimientoEnemigo(enemy, dt)
         
         if enemy.tipo == "tiburon" and enemy.anim then
-        enemy.anim:update(dt)
+            enemy.anim:update(dt)
         end
 
         if enemy.tipo == "submarino" then
@@ -1207,35 +1197,36 @@ end
         end
         
         if enemy.tipo == "submarino" and enemy.anim then
-        enemy.anim:update(dt)
+            enemy.anim:update(dt)
         end
 
-        if (enemy.lado == "izquierda" and x > love.graphics.getWidth() + 50) or
-           (enemy.lado == "derecha" and x < -50) then
+        if (enemy.lado == "izquierda" and x > love.graphics.getWidth() + 50) or (enemy.lado == "derecha" and x < -50) then
             enemy.body:destroy()
             table.remove(tiburones, i)
         end
     end
 
-        -- [[actualizar animaciones de los disparos del jugador]]
-for i, d in ipairs(disparosJugador) do
-    if d.anim then
-        d.anim:update(dt)
+    -- [[actualizar animaciones de los disparos del jugador]]
+    for i, d in ipairs(disparosJugador) do
+        if d.anim then
+            d.anim:update(dt)
+        end
     end
-end
 
--- [[actualizar animaciones de los disparos enemigos]]
-for i, d in ipairs(disparos) do
-    if d.anim then
-        d.anim:update(dt)
+    -- [[actualizar animaciones de los disparos enemigos]]
+    for i, d in ipairs(disparos) do
+        if d.anim then
+            d.anim:update(dt)
+        end
     end
-end
--- [[actualizar animaciones de los power ups]]
-for i, p in ipairs(powerUps) do
-    if p.anim then
-        p.anim:update(dt)
+
+    -- [[actualizar animaciones de los power ups]]
+    for i, p in ipairs(powerUps) do
+        if p.anim then
+            p.anim:update(dt)
+        end
     end
-end
+
     --[[ dibujo de los buzos ]]
     for i = #buzos, 1, -1 do
         local buzo = buzos[i]
@@ -1243,8 +1234,7 @@ end
         if not buzo.recogido then
             local x, y = buzo.body:getPosition()
             buzo.body:setX(x + buzo.speed * dt)
-            if (buzo.lado == "izquierda" and x > love.graphics.getWidth() + 50) or
-            (buzo.lado == "derecha" and x < -50) then
+            if (buzo.lado == "izquierda" and x > love.graphics.getWidth() + 50) or (buzo.lado == "derecha" and x < -50) then
                 buzo.body:destroy()
                 table.remove(buzos, i)
             end
@@ -1304,29 +1294,29 @@ end
     --[[ creacion de colision en las balas del enemigo ]]
     if player.vivo then
         local colisionEnemigos = world:queryCircleArea(player.x, player.y, 21, {'Enemy'})
-          for _, c in ipairs(colisionEnemigos) do
-        -- [[Eliminar enemigo que colisionó]]
-        for i = #tiburones, 1, -1 do
-            if tiburones[i].body == c then
-                c:destroy()
-                table.remove(tiburones, i)
-                break
+        for _, c in ipairs(colisionEnemigos) do
+            -- [[Eliminar enemigo que colisionó]]
+            for i = #tiburones, 1, -1 do
+                if tiburones[i].body == c then
+                    c:destroy()
+                    table.remove(tiburones, i)
+                    break
+                end
             end
-        end
 
-        matarJugador()
-                player.vidas = player.vidas - 1
-        if player.vidas <= 0 then
-            love.event.quit()
-        end
-
-        break --[[esto para romper el for ya que 
+            matarJugador()
+            player.vidas = player.vidas - 1
+            if player.vidas <= 0 then
+                love.event.quit()
+            end
+            break --[[esto para romper el for ya que 
                 solo se cuenta una colisión por frame]]
+        end
     end
 
-        local colisionBalas = world:queryCircleArea(player.x, player.y, 21, {'DisparoEnemy'})
+    local colisionBalas = world:queryCircleArea(player.x, player.y, 21, {'DisparoEnemy'})
 
-        for _, c in ipairs(colisionBalas) do
+    for _, c in ipairs(colisionBalas) do
         -- [[Eliminar bala enemiga que colisionó]]
         for i = #disparos, 1, -1 do
             if disparos[i].body == c then
@@ -1337,7 +1327,7 @@ end
         end
 
         matarJugador()
-                player.vidas = player.vidas - 1
+        player.vidas = player.vidas - 1
         if player.vidas <= 0 then
             love.event.quit()
         end
@@ -1395,8 +1385,7 @@ end
             end ]]
 
     
-            if math.abs(bx - px) < (bw + pw) / 2 + paddingX and
-               math.abs(by - py) < (bh + ph) / 2 + paddingY then
+            if math.abs(bx - px) < (bw + pw) / 2 + paddingX and math.abs(by - py) < (bh + ph) / 2 + paddingY then
     
                 -- Recoger buzo
                 table.insert(buzoRecogido, {
@@ -1455,7 +1444,7 @@ end
     
     --[[ oxigeno ]] 
     if player.y > 100 then
-        player.oxygen = player.oxygen - dt * 4
+        player.oxygen = player.oxygen - dt * 3
         if player.oxygen <= 0 then
             matarJugador()
             if player.vidas <= 0 then
@@ -1479,6 +1468,7 @@ function game.draw()
     else
         player.animDead:draw(player.imageDead, player.x, player.y, 0, -player.direccionDisparo, 1, 32, 32)
     end
+
     --[[dibujos de vida del jugador]]
     if player.vivo then
         for i = 1, player.vidas do
@@ -1501,12 +1491,12 @@ function game.draw()
     for _, enemigo in ipairs(tiburones) do
         local x, y = enemigo.body:getPosition()
         if enemigo.tipo == "tiburon" then
-        love.graphics.setColor(1, 1, 1) 
-        enemigo.anim:draw(enemigo.image, x,y, 0, enemigo.lado == "izquierda" and -1 or 1, 1, 32,32)
+            love.graphics.setColor(1, 1, 1) 
+            enemigo.anim:draw(enemigo.image, x,y, 0, enemigo.lado == "izquierda" and -1 or 1, 1, 32,32)
         end
         if enemigo.tipo == "submarino"  then
             love.graphics.setColor(1, 1, 1) 
-         enemigo.anim:draw(enemigo.image, x,y, 0, enemigo.lado == "izquierda" and -1 or 1, 1, 32,32)
+            enemigo.anim:draw(enemigo.image, x,y, 0, enemigo.lado == "izquierda" and -1 or 1, 1, 32,32)
         end
     end
 
@@ -1528,22 +1518,21 @@ function game.draw()
         local x, y = d.body:getPosition()
         d.anim:draw(d.image,x,y,0,-d.direccion,1,24,24)
     end
-
-    
---[[dibujo de power ups]]
-for i, p in ipairs(powerUps) do
-    if p.anim then
-        p.anim:draw(p.anim.image, p.x, p.y)
+ 
+    --[[dibujo de power ups]]
+    for i, p in ipairs(powerUps) do
+        if p.anim then
+            p.anim:draw(p.anim.image, p.x, p.y)
+        end
     end
-end
 
---[[mensaje de oleada de patrones de jefes]]
+    --[[mensaje de oleada de patrones de jefes]]
     if avisoOleadaJefe then
-    love.graphics.setFont(pixelFont)
-    love.graphics.setColor(1, 0, 0)
-    love.graphics.printf("¡ALERTA: OLEADA DE JEFE INMINENTE!", 0, love.graphics.getHeight()/2 - 20, love.graphics.getWidth(), "center")
-    love.graphics.setColor(1,1,1)
-end
+        love.graphics.setFont(pixelFont)
+        love.graphics.setColor(1, 0, 0)
+        love.graphics.printf("¡ALERTA: OLEADA DE JEFE INMINENTE!", 0, love.graphics.getHeight()/2 - 20, love.graphics.getWidth(), "center")
+        love.graphics.setColor(1,1,1)
+    end
 
     --[[ dibujo de marcador de puntos ]]
     love.graphics.setFont(pixelFont)
@@ -1592,10 +1581,5 @@ end
     end
 
 end
-
-end -- de donde es este fokin end???? [[ increible como todo el juego depende de un end]]
---[[ recordatorio: estar pendiente si vamos a modular,
-porque ese end jode todo el fakin codigo ]]
---[[ al quitarlo genera un error en el update, wtf ]]
 
 return game
