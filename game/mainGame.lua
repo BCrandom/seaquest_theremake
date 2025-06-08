@@ -424,15 +424,15 @@ end
 --[[ manejo de aparicion de enemigos ]]
 function SpawnTiburonesPatron(patron)
     --[[ 
-    variables para obtener las dimensiones de la ventana
-        su funcion aqui es delimitar hasta donde pueden aparecer los enemigos en lo alto y ancho de la misma
-    ]]
+    --variables para obtener las dimensiones de la ventana
+    --su funcion aqui es delimitar hasta donde pueden aparecer los enemigos en lo alto y ancho de la misma
+    --]]
     local anchoVentana = love.graphics.getWidth()
     local altoVentana = love.graphics.getHeight()
     local xInicio = patron.lado == "izquierda" and -40 or anchoVentana + 40
     local direccionX = patron.lado == "izquierda" and 1 or -1
 
-    -- [[Calcular la altura total que ocuparán los enemigos en vertical]]
+    -- Calcular la altura total que ocuparán los enemigos en vertical
     local totalAltura = 0
     if patron.orientacion == "vertical" and patron.enemigos then
         -- [[Sumamos el espacio que ocuparán todos los enemigos en el patrón]]
@@ -442,124 +442,119 @@ function SpawnTiburonesPatron(patron)
     elseif patron.orientacion == "vertical" and patron.cantidad and patron.espacio then
         totalAltura = patron.cantidad * patron.espacio
     end
-    
-    -- Posición vertical inicial para que los enemigos queden centrados
+
+    -- Posición vertical inicial para centrar los enemigos
     local yActual = (altoVentana / 2) - (totalAltura / 2)
-        
-    
-    local grupos = patron.enemigos or {{tipo=patron.tipo, cantidad=patron.cantidad, espacio=patron.espacio}}
+
+    local grupos = patron.enemigos or {
+        {tipo = patron.tipo, cantidad = patron.cantidad, espacio = patron.espacio}
+    }
+
     for _, grupo in ipairs(grupos) do
+        if grupo.tipo == "buzo" then goto continue end
+
         local cantidad = grupo.cantidad
         local espacio = grupo.espacio
         local ladoGrupo = grupo.lado or patron.lado
         local movimientoGrupo = grupo.movimiento or patron.movimiento or "lineal"
         local direccionX = ladoGrupo == "izquierda" and 1 or -1
         local xInicio = ladoGrupo == "izquierda" and -40 or love.graphics.getWidth() + 40
-        -- [[Corrige el centrado para mixto]]
-    if patron.orientacion == "mixto" then
-        local totalDesplazamiento = (cantidad - 1) * espacio
-        local xCentro = love.graphics.getWidth() / 2
-        local yCentro = love.graphics.getHeight() / 2
 
-        xInicio = xCentro - (totalDesplazamiento / 2) * direccionX
-        yActual = yCentro - (totalDesplazamiento / 2)
-    end
+        if patron.orientacion == "mixto" then
+            local totalDesplazamiento = (cantidad - 1) * espacio
+            local xCentro = love.graphics.getWidth() / 2
+            local yCentro = love.graphics.getHeight() / 2
+
+            xInicio = xCentro - (totalDesplazamiento / 2) * direccionX
+            yActual = yCentro - (totalDesplazamiento / 2)
+        end
+
         for i = 0, grupo.cantidad - 1 do
             local x, y
-            --[[Según la orientación del patrón, se calculan las coordenadas x e y de cada enemigo]]
-            
-            --[[
-            si es Horizontal todos los enemigos 
-            tienen la misma y (en el centro vertical de la ventana) y se separan en x 
-            según el espacio y la dirección.
-            ]]
-            
+            --[[Según la orientación del patrón, se calculan las coordenadas x e y de cada enemigo,
+            --si es Horizontal todos los enemigos 
+            --tienen la misma y (en el centro vertical de la ventana) y se separan en x 
+            --según el espacio y la dirección.
+            --]]
             if patron.orientacion == "horizontal" then
                 y = altoVentana / 2
                 x = xInicio + i * grupo.espacio * direccionX
-
             --[[si es vertical caso conrrario al horizontal ]]
             elseif patron.orientacion == "vertical" then
                 x = xInicio
                 y = yActual + i * grupo.espacio
             --[[si es mixto  aumenta x e y ]]
             elseif patron.orientacion == "mixto" then
-            x = xInicio + i * espacio * direccionX
-            y = yActual + i * espacio
-        end
-
-        --[[ condicional del delay donde se agrega a la lista 
-        los enemigos pendiente y el tiempo de salida que va a 
-        ver entre ellos,asi como su patron y tipo  ]]
-
+                x = xInicio + i * espacio * direccionX
+                y = yActual + i * espacio
+            end
+            --[[ condicional del delay donde se agrega a la lista 
+            --los enemigos pendiente y el tiempo de salida que va a 
+            --ver entre ellos,asi como su patron y tipo  ]]
             if patron.delay then
-                --[[ Guardamos para spawn futuro con delay]]
-                local delay = i * math.random(0.5, 1.5)-- [[Delay aleatorio entre 0.5 y 1.5 segundos por enemigo]]
+                local delay = i * math.random(0.5, 1.5)
+                --[[
+                envio de direccion y tipo de enemigo de acuerdo al patron
+                instancia de la colicion para los enemigos
+                ]]      
                 local image, anim
 
                 if grupo.tipo == "submarino" then
-                    
                     if oleadaJefeActiva then
                         image = submarinoJefeImage
                         anim = submarinoJefeAnim:clone()
-                        else
+                    else
                         image = submarinoImage
                         anim = submarinoAnim:clone()
                     end
-                
                 elseif grupo.tipo == "tiburon" then
                     if oleadaJefeActiva then
-                image = TiburonJefeImage
-                anim = TiburonJefeAnim:clone()
-            else
-                image = TiburonImage
-                anim = TiburonAnim:clone()
-            end
-        end
+                        image = TiburonJefeImage
+                        anim = TiburonJefeAnim:clone()
+                    else
+                        image = TiburonImage
+                        anim = TiburonAnim:clone()
+                    end
+                end
 
-table.insert(enemigosDelay, {
-    x = x,
-    y = y,
-    lado = ladoGrupo,
-    tipo = grupo.tipo,
-    tiempoRestante = i,
-    orientacion = patron.orientacion,
-    movimiento = movimientoGrupo,
-    tiempo = 0,
-    baseX = x,
-    baseY = y,
-    image = image,
-    anim = anim
-})
+                table.insert(enemigosDelay, {
+                    x = x,
+                    y = y,
+                    lado = ladoGrupo,
+                    tipo = grupo.tipo,
+                    tiempoRestante = i,
+                    orientacion = patron.orientacion,
+                    movimiento = movimientoGrupo,
+                    tiempo = 0,
+                    baseX = x,
+                    baseY = y,
+                    image = image,
+                    anim = anim
+                })
             else
                 local enemigo = {}
                 --[[ control de direccion de los colliders de los enemigos ]]
                 enemigo.body = world:newRectangleCollider(x, y, 40, 20)
                 enemigo.speed = ladoGrupo == "izquierda" and 100 or -100
-                
-                --[[
-        envio de direccion y tipo de enemigo de acuerdo al patron
-        instancia de la colicion para los enemigos
-        ]]      
-        local image, anim
 
-if grupo.tipo == "submarino" then
-    if oleadaJefeActiva then
-        image = submarinoJefeImage
-        anim = submarinoJefeAnim:clone()
-    else
-        image = submarinoImage
-        anim = submarinoAnim:clone()
-    end
-elseif grupo.tipo == "tiburon" then
-    if oleadaJefeActiva then
-        image = TiburonJefeImage
-        anim = TiburonJefeAnim:clone()
-    else
-        image = TiburonImage
-        anim = TiburonAnim:clone()
-    end
-end 
+                local image, anim
+                if grupo.tipo == "submarino" then
+                    if oleadaJefeActiva then
+                        image = submarinoJefeImage
+                        anim = submarinoJefeAnim:clone()
+                    else
+                        image = submarinoImage
+                        anim = submarinoAnim:clone()
+                    end
+                elseif grupo.tipo == "tiburon" then
+                    if oleadaJefeActiva then
+                        image = TiburonJefeImage
+                        anim = TiburonJefeAnim:clone()
+                    else
+                        image = TiburonImage
+                        anim = TiburonAnim:clone()
+                    end
+                end
 
                 enemigo.lado = ladoGrupo
                 enemigo.tipo = grupo.tipo
@@ -569,9 +564,8 @@ end
                 enemigo.tiempo = 0
                 enemigo.baseX = x
                 enemigo.baseY = y
-                enemigo.image =image
+                enemigo.image = image
                 enemigo.anim = anim
-
                 --[[ 
                 si el enemigo es un submarino, este debe disparar
                 aqui se inicializan las variables del tiempo para disparos
@@ -579,11 +573,7 @@ end
                 if enemigo.tipo == "submarino" then
                     enemigo.tiempoDesdeUltimoDisparo = 0
                     enemigo.tiempoEntreDisparos = 2
-                    enemigo.image =image
-                    enemigo.anim = anim
                 end
-                
-
                 --[[ se inserta en la lista]]
                 table.insert(tiburones, enemigo)
             end
@@ -592,8 +582,12 @@ end
         if patron.orientacion == "vertical" then
             yActual = yActual + grupo.cantidad * grupo.espacio + 20
         end
+
+        ::continue::
     end
 end
+
+
 
 function SpawnBuzosPatron(patron)
     local anchoVentana = love.graphics.getWidth()
@@ -1147,7 +1141,8 @@ function game.update(dt)
     tiempoDesdeUltimoPatron = tiempoDesdeUltimoPatron + dt
 
     --[[ instancia del disparo del jugador ]]
-    if love.keyboard.isDown("space") and tiempoDesdeUltimoDisparo >= disparoCooldown then
+    local cooldownActual = player.powerUps.disparoRapido and 0.15 or disparoCooldown
+    if love.keyboard.isDown("space") and tiempoDesdeUltimoDisparo >= cooldownActual then
         local offsetX = player.direccionDisparo * 20
         SpawnDisparo(player.x + offsetX, player.y, player.direccionDisparo, 'DisparoJugador')
         MusicDisparoPlayer:stop()
@@ -1292,7 +1287,7 @@ function game.update(dt)
     player.y = player.collider:getY()
 
     --[[ creacion de colision en las balas del enemigo ]]
-    if player.vivo then
+    if player.vivo and  not player.powerUps.inmortal then
         local colisionEnemigos = world:queryCircleArea(player.x, player.y, 21, {'Enemy'})
         for _, c in ipairs(colisionEnemigos) do
             -- [[Eliminar enemigo que colisionó]]
