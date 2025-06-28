@@ -47,13 +47,17 @@ function game.load()
     ultimoPuntajePatron = 0
     intervaloPuntajePatron = 600
 
-    --[[ instancia de clases para hitbox de enemigos ]]
+    --[[ instancia de clases para hitboxes ]]
+    -- clase enemigo
     world:addCollisionClass('Enemy')
     -- clase buzo
     world:addCollisionClass('buzo')
+    -- disparos
     world:addCollisionClass('DisparoJugador')
     world:addCollisionClass('DisparoEnemy')
+    -- power ups
     world:addCollisionClass('PowerUp')
+    -- clase jugador
     world:addCollisionClass('Player')
     --[[ validacion: que las balas del enemigo no choquen con las del jugador y viceversa ]]
     world:collisionClassesSet('DisparoJugador', {ignores = {'DisparoJugador', 'DisparoEnemy'}})
@@ -69,7 +73,8 @@ function game.load()
         vivo = true,
         vidas = 3,
         oxygen = 100,
-        maxOxygen = 100
+        maxOxygen = 100,
+        dead = false
     }
     player = game.player
     player.tiempoMuerte = 0
@@ -141,16 +146,9 @@ function game.load()
     InmorPowerImage=love.graphics.newImage("assets/sprites/power Ups/inmortal.png")
     InmorPowerGrid=anim8.newGrid(64, 64,InmorPowerImage:getWidth(),InmorPowerImage:getHeight())
     InmorAnim=anim8.newAnimation(InmorPowerGrid(1,'1-2'), 0.1)
-    
-    --[[buzos]]
-    buzoRecogido = nil
-    puedeRecogerBuzo = true
-    buzoRecogido = {}
-    contadorBuzos = 0
-    maxBuzos = 6
 
     -- Creación de los bordes de la pantalla
-    wall_top = world:newRectangleCollider(0, 0, love.graphics.getWidth(), 75)
+    wall_top = world:newRectangleCollider(0, 0, love.graphics.getWidth(), 74                        )
     wall_bottom = world:newRectangleCollider(0, love.graphics.getHeight()-95, love.graphics.getWidth(), 1)
     wall_left = world:newRectangleCollider(0, 0, 1, love.graphics.getHeight())
     wall_right = world:newRectangleCollider(love.graphics.getWidth()-1, 0, 1, love.graphics.getHeight())
@@ -234,9 +232,17 @@ function game.load()
     maxBuzosSpawn = 4
     buzoSize = 20
 
+    buzoRecogido = nil
+    puedeRecogerBuzo = true
+    buzoRecogido = {}
+    contadorBuzos = 0
+    maxBuzos = 6
+
+    buzosEntregados = false
     entregandoBuzos = false
     animacionRescateTimer = 0
     mostrarAnimacionRescate = false
+    bajoSinBuzos = false
 
     tankImage = love.graphics.newImage("assets/sprites/oxygen/oxygentank.png")
 
@@ -294,6 +300,10 @@ function reset()
     disparoCooldown = 1
     tiempoDesdeUltimoDisparo = disparoCooldown
 
+    --[[ resetear entrega de los buzos ]]
+    entregandoBuzos = false
+    buzosEntregados = false
+    bajoSinBuzos = false
     
     disparoCooldown = 0.4
     tiempoDesdeUltimoDisparo = disparoCooldown
@@ -311,6 +321,70 @@ function reset()
     
     indicePatronActual = 1
     desbloqueosRealizados = {} -- reiniciar desbloqueos
+end
+
+function resetDead()
+    if player.dead == true then
+    -- [[Borrar enemigos]]
+        for i = #tiburones, 1, -1 do
+            tiburones[i].body:destroy()
+            table.remove(tiburones, i)
+        end
+
+        --[[ buzos ]]
+        for i = #buzos, 1, -1 do
+            buzos[i].body:destroy()
+            table.remove(buzos, i)
+        end
+
+        -- [[Borrar balas]]
+        for i = #disparos, 1, -1 do
+            disparos[i].body:destroy()
+            table.remove(disparos, i)
+        end
+
+        -- [[Resetear puntuación]]
+        puntuacion = 0
+
+        -- [[Resetear jugador al centro arriba]]
+        player.x = 400
+        player.y = 96
+        player.collider:setPosition(player.x, player.y)
+
+        --[[resetear oxigeno]]
+        player.oxygen = 100
+
+        -- [[Resetear oleadas o patrón de aparición]]
+        indicePatronActual = 1
+        tiempoEnemigo = 0
+        tiempoEntrePatrones = 8 
+        tiempoDesdeUltimoPatron = 0
+
+        disparoCooldown = 1
+        tiempoDesdeUltimoDisparo = disparoCooldown
+
+        --[[ resetear entrega de los buzos ]]
+        entregandoBuzos = false
+        buzosEntregados = false
+        bajoSinBuzos = false
+        
+        disparoCooldown = 0.4
+        tiempoDesdeUltimoDisparo = disparoCooldown
+        oleadaJefeActiva = false
+        avisoOleadaJefe = false
+        nivelOleadaJefe = 0
+        puntosUltimaOleadaJefe = 0
+        puntosEntreOleadas = 1500             
+        duracionOleadaJefe = 500
+        ultimoPuntajePatron = 0
+        intervaloPuntajePatron = 300  
+        
+        MusicaDeBoss:stop()
+        MusicaDeFondo:stop()
+        
+        indicePatronActual = 1
+        desbloqueosRealizados = {} -- reiniciar desbloqueos
+    end
 end
 
 function reiniciarOleadaEnemigos()
@@ -587,8 +661,6 @@ function SpawnTiburonesPatron(patron)
     end
 end
 
-
-
 function SpawnBuzosPatron(patron)
     local anchoVentana = love.graphics.getWidth()
     local altoVentana = love.graphics.getHeight()
@@ -824,7 +896,6 @@ function cloneP(t)
     return copy --[[retorna esa lista]]
 end
 
-
 function matarJugador()
     if player.vivo then
         player.vivo = false
@@ -834,6 +905,7 @@ function matarJugador()
         MusicDeadPlayer:play()
     end
 end
+
 function movimientoAleatorio()
     return movimientosDisponibles[math.random(#movimientosDisponibles)]
 end
@@ -1302,7 +1374,9 @@ function game.update(dt)
             matarJugador()
             player.vidas = player.vidas - 1
             if player.vidas <= 0 then
-                love.event.quit()
+                player.dead = true
+                resetDead()
+                --[[ love.event.quit() ]]
             end
             break --[[esto para romper el for ya que 
                 solo se cuenta una colisión por frame]]
@@ -1324,7 +1398,9 @@ function game.update(dt)
         matarJugador()
         player.vidas = player.vidas - 1
         if player.vidas <= 0 then
-            love.event.quit()
+            player.dead = true
+            resetDead()
+            --[[ love.event.quit() ]]
         end
 
         break -- [[mismo caso que con el enemigo]]
@@ -1379,7 +1455,6 @@ function game.update(dt)
                 table.remove(buzos, i)
             end ]]
 
-    
             if math.abs(bx - px) < (bw + pw) / 2 + paddingX and math.abs(by - py) < (bh + ph) / 2 + paddingY then
     
                 -- Recoger buzo
@@ -1395,39 +1470,73 @@ function game.update(dt)
                 break 
             end
         end
-    end         
+    end
 
-    -- entregar buzos a la superficie
-    if contadorBuzos > 0 then
-        local _, jugadorY = player.collider:getPosition()
-        
-        if jugadorY <= 100 then
+    --[[ entregar buzos a la superficie ]]
+    local _, jugadorY = player.collider:getPosition()
+
+    -- Detectar si el jugador bajo sin buzos al inicio de la oleada
+    if jugadorY > 115 and contadorBuzos == 0 and bajoSinBuzos == false and buzosEntregados == false then
+        bajoSinBuzos = true
+    end
+
+    -- Si sube despues de haber bajado sin buzos al inicio de la oleada
+    if jugadorY <= 100 and bajoSinBuzos == true and contadorBuzos == 0 and buzosEntregados == false then
+        matarJugador()
+        player.vidas = player.vidas - 1
+        bajoSinBuzos = false
+
+        if player.vidas <= 0 then
+            player.dead = true
+            resetDead()
+            --[[ love.event.quit() ]]
+        end
+    end
+
+    if jugadorY <= 100 then
+        if contadorBuzos > 0 then
             -- Al comenzar la entrega
-            if not entregandoBuzos then
+            if not entregandoBuzos and not buzosEntregados then
                 entregandoBuzos = true
-                vidasAntesEntrega = vidas
+                tiempoEntregaBuzo = 0
             end
-    
-            contadorBuzos = contadorBuzos - 1
-            table.remove(buzoRecogido) 
-            player.oxygen = player.maxOxygen
-            puntuacion = puntuacion + 200
-    
-            -- Si entregó todos los buzos (6)
-            if contadorBuzos == 0 and #buzoRecogido == 0 then
-                entregandoBuzos = false
-    
-                if contadorBuzos == 6 then
-                    puntuacion = puntuacion + 1000
-                    player.oxygen = player.maxOxygen
-                    mostrarAnimacionRescate = true
-                    animacionRescateTimer = 2
-    
-                    -- Reiniciar oleada de enemigos
-                    reiniciarOleadaEnemigos()
+
+            -- Entregar buzos
+            if entregandoBuzos == true then
+                tiempoEntregaBuzo = tiempoEntregaBuzo + dt
+                if tiempoEntregaBuzo >= 0.2 then
+                    tiempoEntregaBuzo = 0
+
+                    if contadorBuzos <= 5 then
+
+                        contadorBuzos = contadorBuzos - 1
+                        table.remove(buzoRecogido)
+                        player.oxygen = player.maxOxygen
+                        puntuacion = puntuacion + 200
+                        buzosEntregados = true
+                        entregandoBuzos = false
+
+                    elseif contadorBuzos == maxBuzos then
+
+                        contadorBuzos = 0
+                        buzoRecogido = {}
+                        puntuacion = puntuacion + 1000
+                        player.oxygen = player.maxOxygen
+                        mostrarAnimacionRescate = true
+                        animacionRescateTimer = 2
+
+                        -- Reiniciar oleada de enemigos
+                        reiniciarOleadaEnemigos()
+                        entregandoBuzos = false
+                    end
                 end
             end
         end
+
+    else
+        -- Resetear estado de entrega si el jugador baja
+        entregandoBuzos = false
+        buzosEntregados = false
     end
 
     if mostrarAnimacionRescate then
@@ -1443,7 +1552,9 @@ function game.update(dt)
         if player.oxygen <= 0 then
             matarJugador()
             if player.vidas <= 0 then
-                love.event.quit()
+                player.dead = true
+                resetDead()
+                --[[ love.event.quit() ]]
             end
         end
     end
@@ -1454,6 +1565,7 @@ function game.draw()
 
     gameMap:drawLayer(gameMap.layers["notwater"])
     gameMap:drawLayer(gameMap.layers["realwater"])
+    gameMap:drawLayer(gameMap.layers["clouds"])
 
     --[[ world:draw() ]]
 
@@ -1570,7 +1682,7 @@ function game.draw()
     love.graphics.draw(tankImage, tankX, tankY - 12, 0, scale, scale)
 
     if mostrarAnimacionRescate then
-        love.graphics.setColor(1, 1, 0) -- Amarillo
+        love.graphics.setColor(1, 1, 0)
         love.graphics.printf("¡RESCATE COMPLETO!", 0, love.graphics.getHeight()/2 - 20, love.graphics.getWidth(), "center")
         love.graphics.setColor(1, 1, 1)
     end

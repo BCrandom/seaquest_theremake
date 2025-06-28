@@ -28,9 +28,9 @@ function Gamestate.load()
 end
 
 function Gamestate.update(dt)
-    --[[ if Gamestate.current == "play" and Gamestate.gameOver() then
+    if Gamestate.current == "play" and Gamestate.gameOver() then
         Gamestate.switch("death")
-    end ]]
+    end
     
     if Gamestate.current == "menu" then
         menu.update(dt)
