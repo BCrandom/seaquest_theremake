@@ -28,7 +28,7 @@ function game.load()
 
     --[[ variables de tiempo ]]
     tiempoEnemigo = 0
-    tiempoEntrePatrones = 9
+    tiempoEntrePatrones = 7
     tiempoDesdeUltimoPatron = 0
 
     --[[ variables de disparos ]]
@@ -40,8 +40,11 @@ function game.load()
     avisoOleadaJefe = false
     puntosUltimaOleadaJefe = 0
     nivelOleadaJefe = 0
-    puntosEntreOleadas = 1700            
-    duracionOleadaJefe = 550
+    puntosEntreOleadas = 500            
+    tiempoOleadaJefe = 0
+    tiempoInicioOleadaJefe = 0
+    duracionOleadaJefe = 15 
+
 
     --[[variables de oleadas de patrones aleatorias]]
     ultimoPuntajePatron = 0
@@ -171,16 +174,19 @@ function game.load()
     movimientos:diferentes hechos patrones
     ]]
     patrones = {
-        {lado = "derecha", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical"},
+        {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='zigzag'},
         {lado = "ambos",delay=true,orientacion='vertical',movimiento="lineal",enemigos={{tipo = "submarino", cantidad = 2, espacio = 40},{tipo = "tiburon", cantidad = 3, espacio = 40}}},
         {lado="derecha",orientacion='vertical',enemigos={{ tipo = "submarino", cantidad = 2, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
+        {lado = "derecha", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='espiral'},
         {lado="izquierda",orientacion='vertical',enemigos={{ tipo = "submarino", cantidad = 3, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
+        {lado = "derecha", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='salto_tramos'},
         {lado="IgualLados",orientacion='vertical',tipo='tiburon',cantidad=4,espacio=40},
         {lado="IgualLados",orientacion='vertical',tipo='submarino',cantidad=4,espacio=50},
+        {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='espiral'},
         {lado="izquierda", delay=true,orientacion='vertical',tipo='submarino',cantidad=2,espacio=50},
         {lado="derecha", delay=true,orientacion='vertical',tipo='tiburon',cantidad=4,espacio=40},
         {lado="derecha", delay=true,orientacion='vertical',movimiento='zigzag',enemigos={{ tipo = "submarino", cantidad = 2, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
-    
+        {lado = "derecha", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='subida_caida'},
     }
     indicePatronActual = 1
     desbloqueosRealizados = {} 
@@ -188,8 +194,17 @@ function game.load()
     añadir patrones amedida que va aumentando de puntos
     ]]
     desbloqueosPorPuntuacion = {
+    [350]={
+        {lado = "derecha", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='espiral'}
+    },
+    [550]={
+        {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='espiral'}
+    },
     [600] = {
         {lado = "ambos", orientacion = "vertical",enemigos={{lado="derecha",tipo = "submarino", cantidad = 3, espacio = 50,movimiento='zigzag'},{lado="izquierda",tipo = "tiburon", cantidad = 4, espacio = 40,movimiento='sinusoidal'}}}
+    },
+        [700]={
+        {lado = "ambos", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='espiral'}
     },
     [800] = {
         {lado = "ambos", orientacion = "vertical",enemigos={{lado="derecha",tipo = "tiburon", cantidad = 3, espacio = 40,movimiento='zigzag'},{lado="izquierda",tipo = "tiburon", cantidad = 4, espacio = 50,movimiento='espiral'}}}
@@ -294,7 +309,7 @@ function reset()
     -- [[Resetear oleadas o patrón de aparición]]
     indicePatronActual = 1
     tiempoEnemigo = 0
-    tiempoEntrePatrones = 8 
+    tiempoEntrePatrones = 7 
     tiempoDesdeUltimoPatron = 0
 
     disparoCooldown = 1
@@ -310,9 +325,10 @@ function reset()
     oleadaJefeActiva = false
     avisoOleadaJefe = false
     nivelOleadaJefe = 0
-    puntosUltimaOleadaJefe = 0
-    puntosEntreOleadas = 1500             
-    duracionOleadaJefe = 500
+    puntosEntreOleadas = 500            
+    tiempoOleadaJefe = 0
+    tiempoInicioOleadaJefe = 0
+    duracionOleadaJefe = 15 
     ultimoPuntajePatron = 0
     intervaloPuntajePatron = 300  
     
@@ -423,6 +439,11 @@ function reiniciarOleadaEnemigos()
     tiempoEnemigo = 0
     tiempoEntrePatrones = 8 
     tiempoDesdeUltimoPatron = 0
+    nivelOleadaJefe = 0
+    puntosEntreOleadas = 500            
+    tiempoOleadaJefe = 0
+    tiempoInicioOleadaJefe = 0
+    duracionOleadaJefe = 15 
 
     disparoCooldown = 1
     tiempoDesdeUltimoDisparo = disparoCooldown
@@ -525,7 +546,7 @@ function SpawnTiburonesPatron(patron)
     }
 
     for _, grupo in ipairs(grupos) do
-        if grupo.tipo == "buzo" then goto continue end
+        if grupo.tipo ~= "buzo" then
 
         local cantidad = grupo.cantidad
         local espacio = grupo.espacio
@@ -657,7 +678,7 @@ function SpawnTiburonesPatron(patron)
             yActual = yActual + grupo.cantidad * grupo.espacio + 20
         end
 
-        ::continue::
+        end
     end
 end
 
@@ -678,7 +699,7 @@ function SpawnBuzosPatron(patron)
 
     local yActual = (altoVentana / 2) - (totalAltura / 2)
 
-    for _, grupo in ipairs(patron.enemigos or {{tipo=patron.tipo, cantidad=patron.cantidad, espacio=patron.espacio}}) do
+    for _, grupo in ipairs(patron.enemigos or {{tipo = patron.tipo, cantidad = patron.cantidad, espacio = patron.espacio, lado = patron.lado, movimiento = patron.movimiento}}) do
         if grupo.tipo ~= "buzo" then goto continue end
         local cantidad = grupo.cantidad
         local espacio = grupo.espacio
@@ -708,11 +729,16 @@ function SpawnBuzosPatron(patron)
             buzo.body = world:newRectangleCollider(x, y, 30, 20)
             buzo.body:setType('kinematic')
             buzo.body:setCollisionClass('buzo')
-            buzo.speed = direccionX * 60
+            buzo.speed = 60
             buzo.lado = patron.lado
+            buzo.direccion = patron.lado == "izquierda" and "derecha" or "izquierda"
             buzo.recogido = false
             buzo.image=buzoImage
             buzo.anim= buzosAnim:clone()
+            buzo.movimiento = grupo.movimiento or patron.movimiento or "lineal"
+            buzo.baseX = x
+            buzo.baseY = y
+            buzo.tiempo = 0
             table.insert(buzos, buzo)
         end
 
@@ -723,12 +749,57 @@ function SpawnBuzosPatron(patron)
     end
 end
 
+
+
+
+
 function anyBuzoInPatron(grupos)
     for _, grupo in ipairs(grupos) do
         if grupo.tipo == "buzo" then return true end
     end
     return false
 end
+
+--[[movimientos de los buzos]]
+function actualizarMovimientoBuzo(buzo, dt)
+    local x, y = buzo.body:getPosition()
+    local t = buzo.tiempo or 0
+    t = t + dt
+    buzo.tiempo = t
+    local dir = buzo.direccion == "derecha" and 1 or -1
+    local speed = buzo.speed
+
+    if buzo.movimiento == "zigzag" then
+        x = x + speed * dt * dir
+        y = buzo.baseY + math.sin(t * 5) * 30
+    elseif buzo.movimiento == "sinusoidal" then
+        x = x + speed * dt * dir
+        y = buzo.baseY + math.sin(x / 50) * 20
+    elseif buzo.movimiento == "circular" then
+        buzo.baseX = buzo.baseX + speed * dt
+        x = buzo.baseX + math.cos(t * 2) * 60 * dir
+        y = buzo.baseY + math.sin(t * 2) * 60 -- movimiento lineal por defecto
+    elseif buzo.movimiento == "subida_caida" then
+        x = x + speed * dt
+        y = buzo.baseY + (math.abs(math.sin(t * 3)) > 0.5 and -60 or 60)
+    elseif buzo.movimiento == "espiral" then
+        buzo.baseX = buzo.baseX + speed * dt
+        local radio = 10 + t * 5  -- [[Radio crece con el tiempo para espiral abierta]]
+        x = buzo.baseX + math.cos(t * 4) * radio * dir
+        y = buzo.baseY + math.sin(t * 4) * radio
+    elseif buzo.movimiento == "s_shape" then
+        x = x + speed * dt
+        y = buzo.baseY + math.sin(t * 10 + x / 30) * 40
+    elseif buzo.movimiento == "salto_tramos" then
+        x = x + speed * dt
+        y = buzo.baseY + ((math.floor(t * 2) % 2 == 0) and -50 or 50)
+    else
+        x = x + speed * dt * dir
+    end
+
+    buzo.body:setPosition(x, y)
+end
+
 
 --[[ creacion de hitbox de disparo ]]
 function SpawnDisparo(x, y, direccion, clase)
@@ -923,7 +994,7 @@ function activarOleadaJefe(nivel)
     
 
     -- [[Cantidades ajustadas por nivel]]
-    local cantidadGrupos = love.math.random(1, 2) -- [[Número de grupos por oleada]]
+    local cantidadGrupos = love.math.random(1, 3) -- [[Número de grupos por oleada]]
     local espacio = math.max(20, 50 - nivel * 5)  -- [[Espacio entre enemigos]]
     local grupos = {}
 
@@ -1045,14 +1116,14 @@ function game.update(dt)
 
     --[[para activar la oleadas cada cierto cantidad de puntos]]
     if puntuacion >= puntosUltimaOleadaJefe + puntosEntreOleadas and not oleadaJefeActiva then
-        puntosUltimaOleadaJefe = puntuacion
         --[[esto para las oleadas de jefe]]
         oleadaJefeActiva = true
         avisoOleadaJefe = true
         tiempoEntrePatrones = 7
         tiempoAvisoJefe = 3 
         nivelOleadaJefe = nivelOleadaJefe + 1
-        puntosUltimaOleadaJefe = puntuacion
+        tiempoInicioOleadaJefe = love.timer.getTime()  -- guardamos el tiempo actual
+        tiempoOleadaJefe = 0  
         MusicaDeFondo:stop()
         MusicaDeBoss:play()
         activarOleadaJefe(nivelOleadaJefe)
@@ -1079,12 +1150,17 @@ function game.update(dt)
     end
 
     --[[para despues de la oleada de jefes]]
-    if oleadaJefeActiva and puntuacion >= puntosUltimaOleadaJefe + duracionOleadaJefe then
+    if oleadaJefeActiva then
+    tiempoOleadaJefe = tiempoOleadaJefe + dt
+    if tiempoOleadaJefe >= duracionOleadaJefe then
         oleadaJefeActiva = false
-        tiempoEntrePatrones = 8 
+        tiempoEntrePatrones = 8
         MusicaDeBoss:stop()
         MusicaDeFondo:play()
+        -- aquí puedes resetear puntosInicioOleadaJefe para la siguiente oleada o aumentarlo
+        puntosEntreOleadas=puntosEntreOleadas + puntosEntreOleadas 
     end
+end
 
     --[[manejo de aparicion de los enemigos pendientes]]
     for i = #enemigosDelay, 1, -1 do
@@ -1299,9 +1375,9 @@ function game.update(dt)
         local buzo = buzos[i]
         buzo.anim:update(dt)
         if not buzo.recogido then
-            local x, y = buzo.body:getPosition()
-            buzo.body:setX(x + buzo.speed * dt)
-            if (buzo.lado == "izquierda" and x > love.graphics.getWidth() + 50) or (buzo.lado == "derecha" and x < -50) then
+        actualizarMovimientoBuzo(buzo, dt)
+        local x, y = buzo.body:getPosition()
+            if (buzo.direccion == "derecha" and x > love.graphics.getWidth() + 50)or(buzo.direccion == "izquierda" and x < -50) then
                 buzo.body:destroy()
                 table.remove(buzos, i)
             end
@@ -1437,17 +1513,16 @@ function game.update(dt)
                 local dir = buzo.direccion == "derecha" and 1 or -1
                 local nuevoX = bx + dir * velocidad * dt
 
-                if nuevoX < 40 then
-                    buzo.direccion = "derecha"
-                    nuevoX = 40
-                elseif nuevoX > love.graphics.getWidth() - 40 then
-                    buzo.direccion = "izquierda"
-                    nuevoX = love.graphics.getWidth() - 40
+                if not buzo.haEntrado and bx >= 0 and bx <= love.graphics.getWidth() then
+                    buzo.haEntrado = true
                 end
-
-                buzo.body:setX(nuevoX)
+                if buzo.haEntrado and (nuevoX < -50 or nuevoX > love.graphics.getWidth() + 50) then
+                    buzo.body:destroy()
+                    table.remove(buzos, i)
+                else
+                    buzo.body:setX(nuevoX)
+                end
             end
-
             -- Destruir buzo si toca enemigos o sale de pantalla
             --[[ local enemigosTocando = world:queryRectangleArea(bx, by, bw, bh, {'Enemy'})
             if #enemigosTocando > 0 or bx < -50 or bx > love.graphics.getWidth() + 50 then
@@ -1607,13 +1682,13 @@ function game.draw()
         end
     end
 
-    for _, buzo in ipairs(buzos) do
-        if not buzo.recogido then
-            local x, y = buzo.body:getPosition()
-            love.graphics.setColor(1, 1, 1) 
-            buzo.anim:draw(buzo.image,x,y,0, buzo.lado == "izquierda" and -1 or 1, 1, 32,32)
-        end
+for _, buzo in ipairs(buzos) do
+    if not buzo.recogido then
+        local x, y = buzo.body:getPosition()
+        love.graphics.setColor(1, 1, 1)
+        buzo.anim:draw(buzo.image, x, y, 0, buzo.lado == "izquierda" and -1 or 1 , 1, 15, 10)
     end
+end
 
     --[[ dibujo de disparos ]]
     love.graphics.setColor(1, 1, 1)
