@@ -453,7 +453,7 @@ function reiniciarOleadaEnemigos()
     tiempoEntrePatrones = 8 
     tiempoDesdeUltimoPatron = 0
     nivelOleadaJefe = 0
-    puntosEntreOleadas = 500            
+    puntosEntreOleadas = 1500            
     tiempoOleadaJefe = 0
     tiempoInicioOleadaJefe = 0
     duracionOleadaJefe = 15 
@@ -1166,7 +1166,7 @@ function game.update(dt)
         MusicaDeBoss:stop()
         MusicaDeFondo:play()
         -- aquí puedes resetear puntosInicioOleadaJefe para la siguiente oleada o aumentarlo
-        puntosEntreOleadas=puntosEntreOleadas + puntosEntreOleadas 
+        puntosEntreOleadas = puntosEntreOleadas + puntosEntreOleadas 
     end
 end
 
