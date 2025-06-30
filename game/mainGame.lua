@@ -28,7 +28,7 @@ function game.load()
 
     --[[ variables de tiempo ]]
     tiempoEnemigo = 0
-    tiempoEntrePatrones = 7
+    tiempoEntrePatrones = 4
     tiempoDesdeUltimoPatron = 0
 
     --[[ variables de disparos ]]
@@ -40,7 +40,7 @@ function game.load()
     avisoOleadaJefe = false
     puntosUltimaOleadaJefe = 0
     nivelOleadaJefe = 0
-    puntosEntreOleadas = 500            
+    puntosEntreOleadas = 1500            
     tiempoOleadaJefe = 0
     tiempoInicioOleadaJefe = 0
     duracionOleadaJefe = 15 
@@ -48,7 +48,11 @@ function game.load()
 
     --[[variables de oleadas de patrones aleatorias]]
     ultimoPuntajePatron = 0
-    intervaloPuntajePatron = 600
+    intervaloPuntajePatron = 250
+
+    --[[variables de oleadas de patrones de buzos ]]
+    tiempoSpawnBuzoOleada = 0
+    cooldownBuzoOleada = 17
 
     --[[ instancia de clases para hitboxes ]]
     -- clase enemigo
@@ -175,15 +179,16 @@ function game.load()
     ]]
     patrones = {
         {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='zigzag'},
-        {lado = "ambos",delay=true,orientacion='vertical',movimiento="lineal",enemigos={{tipo = "submarino", cantidad = 2, espacio = 40},{tipo = "tiburon", cantidad = 3, espacio = 40}}},
+        {lado = "IgualLados",delay=true,orientacion='vertical',movimiento="lineal",enemigos={{tipo = "submarino", cantidad = 2, espacio = 40},{tipo = "tiburon", cantidad = 3, espacio = 40}}},
         {lado="derecha",orientacion='vertical',enemigos={{ tipo = "submarino", cantidad = 2, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
         {lado = "derecha", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='espiral'},
         {lado="izquierda",orientacion='vertical',enemigos={{ tipo = "submarino", cantidad = 3, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
         {lado = "derecha", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='salto_tramos'},
+        {lado = "ambos", orientacion = "vertical",enemigos={{lado="derecha",tipo = "submarino", cantidad = 3, espacio = 50,movimiento='zigzag'},{lado="izquierda",tipo = "tiburon", cantidad = 4, espacio = 40,movimiento='sinusoidal'}}},
         {lado="IgualLados",orientacion='vertical',tipo='tiburon',cantidad=4,espacio=40},
         {lado="IgualLados",orientacion='vertical',tipo='submarino',cantidad=4,espacio=50},
         {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='espiral'},
-        {lado="izquierda", delay=true,orientacion='vertical',tipo='submarino',cantidad=2,espacio=50},
+        {lado="IgualLados", delay=true,orientacion='vertical',tipo='submarino',cantidad=2,espacio=50},
         {lado="derecha", delay=true,orientacion='vertical',tipo='tiburon',cantidad=4,espacio=40},
         {lado="derecha", delay=true,orientacion='vertical',movimiento='zigzag',enemigos={{ tipo = "submarino", cantidad = 2, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
         {lado = "derecha", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='subida_caida'},
@@ -309,10 +314,10 @@ function reset()
     -- [[Resetear oleadas o patrón de aparición]]
     indicePatronActual = 1
     tiempoEnemigo = 0
-    tiempoEntrePatrones = 7 
+    tiempoEntrePatrones = 4 
     tiempoDesdeUltimoPatron = 0
 
-    disparoCooldown = 1
+    disparoCooldown = 0.4
     tiempoDesdeUltimoDisparo = disparoCooldown
 
     --[[ resetear entrega de los buzos ]]
@@ -325,13 +330,16 @@ function reset()
     oleadaJefeActiva = false
     avisoOleadaJefe = false
     nivelOleadaJefe = 0
-    puntosEntreOleadas = 500            
+    puntosEntreOleadas = 1500            
     tiempoOleadaJefe = 0
     tiempoInicioOleadaJefe = 0
     duracionOleadaJefe = 15 
     ultimoPuntajePatron = 0
-    intervaloPuntajePatron = 300  
+    intervaloPuntajePatron = 250  
     
+    tiempoSpawnBuzoOleada = 0
+    cooldownBuzoOleada = 17
+
     MusicaDeBoss:stop()
     MusicaDeFondo:play()
     
@@ -373,10 +381,10 @@ function resetDead()
         -- [[Resetear oleadas o patrón de aparición]]
         indicePatronActual = 1
         tiempoEnemigo = 0
-        tiempoEntrePatrones = 8 
+        tiempoEntrePatrones = 4 
         tiempoDesdeUltimoPatron = 0
 
-        disparoCooldown = 1
+        disparoCooldown = 0.4
         tiempoDesdeUltimoDisparo = disparoCooldown
 
         --[[ resetear entrega de los buzos ]]
@@ -389,12 +397,17 @@ function resetDead()
         oleadaJefeActiva = false
         avisoOleadaJefe = false
         nivelOleadaJefe = 0
-        puntosUltimaOleadaJefe = 0
-        puntosEntreOleadas = 1500             
-        duracionOleadaJefe = 500
+        puntosUltimaOleadaJefe = 0            
         ultimoPuntajePatron = 0
-        intervaloPuntajePatron = 300  
+        intervaloPuntajePatron = 250  
+        puntosEntreOleadas = 1500            
+        tiempoOleadaJefe = 0
+        tiempoInicioOleadaJefe = 0
+        duracionOleadaJefe = 15 
         
+        tiempoSpawnBuzoOleada = 0
+        cooldownBuzoOleada = 17
+
         MusicaDeBoss:stop()
         MusicaDeFondo:stop()
         
@@ -749,10 +762,6 @@ function SpawnBuzosPatron(patron)
     end
 end
 
-
-
-
-
 function anyBuzoInPatron(grupos)
     for _, grupo in ipairs(grupos) do
         if grupo.tipo == "buzo" then return true end
@@ -799,7 +808,6 @@ function actualizarMovimientoBuzo(buzo, dt)
 
     buzo.body:setPosition(x, y)
 end
-
 
 --[[ creacion de hitbox de disparo ]]
 function SpawnDisparo(x, y, direccion, clase)
@@ -1044,7 +1052,7 @@ function generarPatronAleatorio()
         enemigos = {
             {
                 tipo = tipos[math.random(#tipos)],
-                cantidad = math.random(2, 5),
+                cantidad = math.random(4, 8),
                 espacio = math.random(40, 80)
             }
         }
@@ -1119,7 +1127,7 @@ function game.update(dt)
         --[[esto para las oleadas de jefe]]
         oleadaJefeActiva = true
         avisoOleadaJefe = true
-        tiempoEntrePatrones = 7
+        tiempoEntrePatrones = 5
         tiempoAvisoJefe = 3 
         nivelOleadaJefe = nivelOleadaJefe + 1
         tiempoInicioOleadaJefe = love.timer.getTime()  -- guardamos el tiempo actual
@@ -1154,7 +1162,7 @@ function game.update(dt)
     tiempoOleadaJefe = tiempoOleadaJefe + dt
     if tiempoOleadaJefe >= duracionOleadaJefe then
         oleadaJefeActiva = false
-        tiempoEntrePatrones = 8
+        tiempoEntrePatrones = 5
         MusicaDeBoss:stop()
         MusicaDeFondo:play()
         -- aquí puedes resetear puntosInicioOleadaJefe para la siguiente oleada o aumentarlo
@@ -1210,6 +1218,31 @@ end
             table.remove(enemigosDelay, i)
         end
     end
+
+
+    tiempoSpawnBuzoOleada = tiempoSpawnBuzoOleada + dt
+        if tiempoSpawnBuzoOleada >= cooldownBuzoOleada then
+            -- Crear nuevo patrón aleatorio SOLO de buzos
+        local nuevoPatronBuzos = {
+            lado = (math.random() < 0.5) and "izquierda" or "derecha",
+            orientacion = "vertical",
+            delay = true,
+            movimiento = "zigzag",
+            enemigos = {
+                {
+                    tipo = "buzo",
+                    cantidad = math.random(2, 5),
+                    espacio = math.random(40, 80)
+                }
+            }
+        }
+
+    -- Lanzar la oleada de buzos
+        SpawnBuzosPatron(nuevoPatronBuzos)
+
+    -- Reiniciar temporizador
+        tiempoSpawnBuzoOleada = 0
+end
 
     if not player.vivo then
         player.animDead:update(dt)
