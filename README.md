@@ -1,7 +1,7 @@
 ## BUGQUEST | Remasterización del juego para atari 2600 "Seaquest".
 
 <p align="center">
-  <img src="./assets/screenshots/banner.png" alt="Banner" width="300">
+  <img src="./assets/screenshots/banner.png" alt="Banner">
 </p>
 
 ### ELECTIVA 5 / SECCIÓN 1
