@@ -40,7 +40,7 @@ function game.load()
     avisoOleadaJefe = false
     puntosUltimaOleadaJefe = 0
     nivelOleadaJefe = 0
-    puntosEntreOleadas = 1500            
+    puntosEntreOleadas = 500            
     tiempoOleadaJefe = 0
     tiempoInicioOleadaJefe = 0
     duracionOleadaJefe = 15 
@@ -178,6 +178,9 @@ function game.load()
     movimientos:diferentes hechos patrones
     ]]
     patrones = {
+        {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='zigzag'},
+        {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='zigzag'},
+        {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='zigzag'},
         {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='zigzag'},
         {lado = "IgualLados",delay=true,orientacion='vertical',movimiento="lineal",enemigos={{tipo = "submarino", cantidad = 2, espacio = 40},{tipo = "tiburon", cantidad = 3, espacio = 40}}},
         {lado="derecha",orientacion='vertical',enemigos={{ tipo = "submarino", cantidad = 2, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
@@ -458,7 +461,7 @@ function reiniciarOleadaEnemigos()
     tiempoInicioOleadaJefe = 0
     duracionOleadaJefe = 15 
 
-    disparoCooldown = 1
+    disparoCooldown = 0.4
     tiempoDesdeUltimoDisparo = disparoCooldown
 
     indicePatronActual = 1
@@ -1636,6 +1639,8 @@ end
                         -- Reiniciar oleada de enemigos
                         reiniciarOleadaEnemigos()
                         entregandoBuzos = false
+                        bajoSinBuzos = false
+                        buzosEntregados = true
                     end
                 end
             end
