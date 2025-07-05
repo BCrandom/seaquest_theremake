@@ -22,7 +22,6 @@
     ">
         <img src="/assets/screenshots/bugquest.png" alt="Bugquest" width="250px" style="border-radius: 8px;">
         <h3 style="padding-bottom: 0; margin-bottom: 0;">Bugquest (Seaquest Remake)</h3>
-        <p>Remake de Seaquest para Atari 2600 en LÖVE2D</p>
         <a href="https://bcrandom306.itch.io/bugquest-seaquest-remake"
         style="
             display: inline-block;
