@@ -9,7 +9,7 @@
 - Eduardo Hurtado.
 - Barbara Correa.
 
-<div style="
+<div aling="center" style="
         padding: 10px;
         text-align: center;
         display: flex;
