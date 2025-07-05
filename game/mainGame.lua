@@ -40,7 +40,7 @@ function game.load()
     avisoOleadaJefe = false
     puntosUltimaOleadaJefe = 0
     nivelOleadaJefe = 0
-    puntosEntreOleadas = 500            
+    puntosEntreOleadas = 3000            
     tiempoOleadaJefe = 0
     tiempoInicioOleadaJefe = 0
     duracionOleadaJefe = 15 
@@ -48,11 +48,11 @@ function game.load()
 
     --[[variables de oleadas de patrones aleatorias]]
     ultimoPuntajePatron = 0
-    intervaloPuntajePatron = 250
+    intervaloPuntajePatron = 450
 
     --[[variables de oleadas de patrones de buzos ]]
     tiempoSpawnBuzoOleada = 0
-    cooldownBuzoOleada = 17
+    cooldownBuzoOleada = 18
 
     --[[ instancia de clases para hitboxes ]]
     -- clase enemigo
@@ -178,9 +178,6 @@ function game.load()
     movimientos:diferentes hechos patrones
     ]]
     patrones = {
-        {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='zigzag'},
-        {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='zigzag'},
-        {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='zigzag'},
         {lado = "izquierda", cantidad = 3, espacio = 50, tipo = "buzo",delay=true,orientacion = "vertical",movimiento='zigzag'},
         {lado = "IgualLados",delay=true,orientacion='vertical',movimiento="lineal",enemigos={{tipo = "submarino", cantidad = 2, espacio = 40},{tipo = "tiburon", cantidad = 3, espacio = 40}}},
         {lado="derecha",orientacion='vertical',enemigos={{ tipo = "submarino", cantidad = 2, espacio = 60},{tipo = "tiburon", cantidad = 3, espacio = 50}}},
@@ -333,7 +330,7 @@ function reset()
     oleadaJefeActiva = false
     avisoOleadaJefe = false
     nivelOleadaJefe = 0
-    puntosEntreOleadas = 1500            
+    puntosEntreOleadas = 3000            
     tiempoOleadaJefe = 0
     tiempoInicioOleadaJefe = 0
     duracionOleadaJefe = 15 
@@ -403,7 +400,7 @@ function resetDead()
         puntosUltimaOleadaJefe = 0            
         ultimoPuntajePatron = 0
         intervaloPuntajePatron = 250  
-        puntosEntreOleadas = 1500            
+        puntosEntreOleadas = 3000            
         tiempoOleadaJefe = 0
         tiempoInicioOleadaJefe = 0
         duracionOleadaJefe = 15 
@@ -456,7 +453,7 @@ function reiniciarOleadaEnemigos()
     tiempoEntrePatrones = 8 
     tiempoDesdeUltimoPatron = 0
     nivelOleadaJefe = 0
-    puntosEntreOleadas = 1500            
+    puntosEntreOleadas = 3000            
     tiempoOleadaJefe = 0
     tiempoInicioOleadaJefe = 0
     duracionOleadaJefe = 15 
