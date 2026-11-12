@@ -1,8 +1,8 @@
 local menu = {}
 
 function menu.load()
-    menu.pixelFont = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf", 16)
-    menu.pixelFontTitle = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf", 23)
+    menu.pixelFont = love.graphics.newFont("src/assets/fonts/PressStart2P-Regular.ttf", 16)
+    menu.pixelFontTitle = love.graphics.newFont("src/assets/fonts/PressStart2P-Regular.ttf", 23)
 
     menu.button = { 
         x = 300,
@@ -13,7 +13,7 @@ function menu.load()
         clicked = false
     }
 
-    bg = love.graphics.newImage("assets/sprites/map/background.png")
+    bg = love.graphics.newImage("src/assets/sprites/map/background.png")
 end
 
 function menu.update(dt)

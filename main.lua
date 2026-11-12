@@ -1,5 +1,5 @@
-menu = require('menus/mainMenu')
-gamestate = require('gamestates/gamestate')
+menu = require('src/menus/mainMenu')
+gamestate = require('src/gamestates/gamestate')
 
 function love.load()
     gamestate.load()

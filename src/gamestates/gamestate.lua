@@ -2,9 +2,9 @@ local Gamestate = {}
 
 Gamestate.current = "menu"
 
-local menu = require 'menus/mainMenu'
-local game = require 'game/mainGame'
-local death = require 'menus/gameOverMenu'
+local menu = require 'src/menus/mainMenu'
+local game = require 'src/game/mainGame'
+local death = require 'src/menus/gameOverMenu'
 
 function Gamestate.switch(state)
     Gamestate.current = state
